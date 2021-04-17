@@ -2,25 +2,31 @@ module Types exposing (..)
 
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
-import Lamdera exposing (SessionId, ClientId)
+import Lamdera exposing (ClientId, SessionId)
 import Url exposing (Url)
 
 
 type alias FrontendModel =
-    {
-    key : Key,
-    cards : List Card
+    { key : Key
+    , cards : List Card
+    }
+
+
+type alias LiveUser =
+    { sessionId : String
+    , clientId : String
     }
 
 
 type alias BackendModel =
-    { 
-        cards : List Card
+    { cards : List Card
+    , liveUsers : List LiveUser
     }
 
-type alias Card = {
-        prompt: String
-        , answer: String
+
+type alias Card =
+    { prompt : String
+    , answer : String
     }
 
 
