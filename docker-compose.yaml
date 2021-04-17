@@ -1,0 +1,15 @@
+# I wound up not using this docker-compose file, but perhaps it'll be of use in the future
+version: "3.3"
+
+services:
+  fir-lamdera:
+    container_name: fir-lamdera
+    image: fir-lamdera:dev
+    networks:
+      - fir-lamdera-network
+
+networks:
+  fir-lamdera-network:
+    driver: bridge
+    ipam:
+      driver: default
