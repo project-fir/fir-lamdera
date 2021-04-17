@@ -3,14 +3,18 @@ version: "3.3"
 
 services:
   fir-lamdera:
+    ports:
+      - 8000:8000
     container_name: fir-lamdera
     image: fir-lamdera:dev
     networks:
       - fir-lamdera-network
     stdin_open: true
     tty: true
-    command:
-        bash
+    working_dir: /root/code
+    volumes:
+      - ~/code/fir-lamdera:/root/code
+    command: lamdera live
 
 networks:
   fir-lamdera-network:
