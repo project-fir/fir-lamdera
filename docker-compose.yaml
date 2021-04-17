@@ -7,6 +7,10 @@ services:
     image: fir-lamdera:dev
     networks:
       - fir-lamdera-network
+    stdin_open: true
+    tty: true
+    command:
+        bash
 
 networks:
   fir-lamdera-network:
