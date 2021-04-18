@@ -2,7 +2,7 @@ module Backend exposing (..)
 
 import Html
 import Lamdera exposing (ClientId, SessionId, broadcast, sendToFrontend)
-import Types exposing (BackendModel, BackendMsg(..), Card, ToBackend(..), ToFrontend(..))
+import Types exposing (BackendModel, BackendMsg(..), Card, LiveUser, ToBackend(..), ToFrontend(..))
 
 
 type alias Model =
@@ -32,11 +32,29 @@ update msg model =
             ( model, Cmd.none )
 
         ClientConnected sessionId clientId ->
-            ( model, Cmd.batch [ sendToFrontend clientId (HistoryReceived model.cards) ] )
+            let
+                newUser =
+                    LiveUser sessionId clientId
+
+                newLiveUsers =
+                    model.liveUsers ++ [ newUser ]
+            in
+            ( { model | liveUsers = newLiveUsers }
+            , Cmd.batch
+                [ sendToFrontend clientId (HistoryReceived model.cards)
+                , broadcast <| UserJoined newUser
+                ]
+            )
 
         ClientDisconnected sessionId clientId ->
-            -- TODO: this!
-            ( model, Cmd.none )
+            let
+                oldUser =
+                    LiveUser sessionId clientId
+
+                updatedUsers =
+                    List.filter (\u -> not <| oldUser.clientId == u.clientId) model.liveUsers
+            in
+            ( { model | liveUsers = updatedUsers }, Cmd.batch [ broadcast <| UserLeft oldUser ] )
 
 
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )

@@ -9,6 +9,7 @@ import Url exposing (Url)
 type alias FrontendModel =
     { key : Key
     , cards : List Card
+    , liveUsers : List LiveUser
     }
 
 
@@ -50,3 +51,5 @@ type BackendMsg
 type ToFrontend
     = HistoryReceived (List Card)
     | CardReceived Card
+    | UserJoined LiveUser
+    | UserLeft LiveUser
