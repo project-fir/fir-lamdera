@@ -2,12 +2,12 @@ module Frontend exposing (..)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Nav
-import Element exposing (..)
-import Element.Background as Background exposing (..)
-import Element.Input as Input exposing (..)
+import Element as E exposing (..)
+import Element.Background as EB exposing (..)
+import Element.Input as EI exposing (..)
 import Html exposing (Html)
 import Html.Attributes as Attr
-import Lamdera
+import Lamdera exposing (..)
 import Types exposing (Card, FrontendModel, FrontendMsg(..), LiveUser, ToFrontend(..))
 import Url
 
@@ -91,9 +91,30 @@ view model =
     }
 
 
+viewMarkDown : Model -> Element FrontendMsg
+viewMarkDown model =
+    E.row [ E.width E.fill ]
+        [ EI.multiline [ E.width <| E.px 40 ] 
+        { onChange = MarkdownInputChanged
+        , text = model.markdown
+        , placeholder = Nothing
+        , label = EI.labelHidden "Markd own input"
+        , spellcheck = False
+        }
+        , case markdownView (mkRenderer )
+
+
+markdownView : Markdown.Renderer.Renderer (Element Msg) -> String -> Result String (List (Element Msg))
+markdownView renderer markdown =
+    markdown
+        |> Markdown.Parser.parse
+        |> Result.mapError (\error -> error |> List.map Markdown.Parser.deadEndToString |> String.join "\n")
+        |> Result.andThen (Markdown.Renderer.render renderer)
+
+
 viewLayout : Model -> List (Html FrontendMsg)
 viewLayout model =
-    [ layout [ width fill, Background.color <| rgb255 255 255 255 ]
+    [ layout [ width fill, EB.color <| rgb255 255 255 255 ]
         (el [] <| viewElements model)
     ]
 
@@ -102,7 +123,7 @@ viewElements : Model -> Element FrontendMsg
 viewElements model =
     column []
         [ column [] <| List.map viewCard model.cards
-        , Element.text <| "Currently connected users:"
+        , E.text <| "Currently connected users:"
         , viewLiveUsersTable model.liveUsers
         ]
 
@@ -110,33 +131,33 @@ viewElements model =
 viewCard : Card -> Element FrontendMsg
 viewCard card =
     row [ padding 20 ]
-        [ Element.text card.prompt
-        , Element.text " | "
-        , Element.text card.answer
+        [ E.text card.prompt
+        , E.text " | "
+        , E.text card.answer
         ]
 
 
 viewLiveUsersTable : List LiveUser -> Element FrontendMsg
 viewLiveUsersTable users =
-    Element.table
-        [ Element.centerX
-        , Element.centerY
-        , Element.spacing 5
-        , Element.padding 10
+    E.table
+        [ E.centerX
+        , E.centerY
+        , E.spacing 5
+        , E.padding 10
         ]
         { data = users
         , columns =
-            [ { header = Element.text "Session Id:"
+            [ { header = E.text "Session Id:"
               , width = px 200
               , view =
                     \u ->
-                        Element.text u.sessionId
+                        E.text u.sessionId
               }
-            , { header = Element.text "Client Id:"
+            , { header = E.text "Client Id:"
               , width = fill
               , view =
                     \u ->
-                        Element.text u.clientId
+                        E.text u.clientId
               }
             ]
         }
@@ -144,7 +165,7 @@ viewLiveUsersTable users =
 
 viewLiveUser : LiveUser -> Element FrontendMsg
 viewLiveUser u =
-    row [] [ Element.text <| u.sessionId ++ ":" ++ u.clientId ++ " is here!" ]
+    E.row [] [ E.text <| u.sessionId ++ ":" ++ u.clientId ++ " is here!" ]
 
 
 viewLiveUsers : List LiveUser -> List (Element FrontendMsg)

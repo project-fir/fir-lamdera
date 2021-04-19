@@ -10,6 +10,7 @@ type alias FrontendModel =
     { key : Key
     , cards : List Card
     , liveUsers : List LiveUser
+    , markdown : String
     }
 
 
@@ -35,6 +36,7 @@ type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
     | NoOpFrontendMsg
+    | MarkdownInputChanged
 
 
 type ToBackend
