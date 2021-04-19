@@ -8,7 +8,7 @@ import Element.Input as EI exposing (..)
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Lamdera exposing (..)
-import Types exposing (Card, FrontendModel, FrontendMsg(..), LiveUser, ToFrontend(..))
+import Types exposing (BackendMsg(..), Card, FrontendModel, FrontendMsg(..), LiveUser, ToFrontend(..))
 import Url
 
 
@@ -72,10 +72,10 @@ updateFromBackend msg model =
             -- TODO: this!
             ( { model | cards = cards_ }, Cmd.none )
 
-        UserJoined newUser ->
+        BroadcastUserJoined newUser ->
             ( { model | liveUsers = model.liveUsers ++ [ newUser ] }, Cmd.none )
 
-        UserLeft oldUser ->
+        BroadcastUserLeft oldUser ->
             let
                 updatedUsers =
                     List.filter (\u -> not <| u.clientId == oldUser.clientId) model.liveUsers
@@ -89,27 +89,6 @@ view model =
     { title = "This is the title"
     , body = viewLayout model
     }
-
-
-viewMarkDown : Model -> Element FrontendMsg
-viewMarkDown model =
-    E.row [ E.width E.fill ]
-        [ EI.multiline [ E.width <| E.px 40 ] 
-        { onChange = MarkdownInputChanged
-        , text = model.markdown
-        , placeholder = Nothing
-        , label = EI.labelHidden "Markd own input"
-        , spellcheck = False
-        }
-        , case markdownView (mkRenderer )
-
-
-markdownView : Markdown.Renderer.Renderer (Element Msg) -> String -> Result String (List (Element Msg))
-markdownView renderer markdown =
-    markdown
-        |> Markdown.Parser.parse
-        |> Result.mapError (\error -> error |> List.map Markdown.Parser.deadEndToString |> String.join "\n")
-        |> Result.andThen (Markdown.Renderer.render renderer)
 
 
 viewLayout : Model -> List (Html FrontendMsg)

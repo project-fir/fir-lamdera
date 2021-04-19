@@ -42,7 +42,7 @@ update msg model =
             ( { model | liveUsers = newLiveUsers }
             , Cmd.batch
                 [ sendToFrontend clientId (HistoryReceived model.cards)
-                , broadcast <| UserJoined newUser
+                , broadcast <| BroadcastUserJoined newUser
                 ]
             )
 
@@ -54,7 +54,7 @@ update msg model =
                 updatedUsers =
                     List.filter (\u -> not <| oldUser.clientId == u.clientId) model.liveUsers
             in
-            ( { model | liveUsers = updatedUsers }, Cmd.batch [ broadcast <| UserLeft oldUser ] )
+            ( { model | liveUsers = updatedUsers }, Cmd.batch [ broadcast <| BroadcastUserLeft oldUser ] )
 
 
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )

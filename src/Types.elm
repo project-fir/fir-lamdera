@@ -10,13 +10,14 @@ type alias FrontendModel =
     { key : Key
     , cards : List Card
     , liveUsers : List LiveUser
-    , markdown : String
     }
 
 
 type alias LiveUser =
-    { sessionId : String
-    , clientId : String
+    -- a "live user" is a user that is actively working, kinda like google docs does with the color icons
+    -- TODO: Q for #lamdera?? Would auth stuff go here? How do we avoid broadcasting private info to clients?
+    { sessionId : SessionId
+    , clientId : ClientId
     }
 
 
@@ -36,7 +37,6 @@ type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
     | NoOpFrontendMsg
-    | MarkdownInputChanged
 
 
 type ToBackend
@@ -46,12 +46,12 @@ type ToBackend
 
 type BackendMsg
     = NoOpBackendMsg
-    | ClientConnected SessionId ClientId
-    | ClientDisconnected SessionId ClientId
+    | ClientConnected SessionId ClientId -- TODO: we are not fetching those in the room at the time of connecting!!
+    | ClientDisconnected SessionId ClientId -- TODO: ^^ how do we write unit tests for this? Does elm-test work?
 
 
 type ToFrontend
     = HistoryReceived (List Card)
     | CardReceived Card
-    | UserJoined LiveUser
-    | UserLeft LiveUser
+    | BroadcastUserJoined LiveUser
+    | BroadcastUserLeft LiveUser
