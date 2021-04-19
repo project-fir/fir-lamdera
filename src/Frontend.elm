@@ -2,13 +2,13 @@ module Frontend exposing (..)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Nav
-import Element exposing (..)
-import Element.Background as Background exposing (..)
-import Element.Input as Input exposing (..)
+import Element as E exposing (..)
+import Element.Background as EB exposing (..)
+import Element.Input as EI exposing (..)
 import Html exposing (Html)
 import Html.Attributes as Attr
-import Lamdera
-import Types exposing (Card, FrontendModel, FrontendMsg(..), ToFrontend(..))
+import Lamdera exposing (..)
+import Types exposing (Card, FrontendModel, FrontendMsg(..), LiveUser, ToFrontend(..))
 import Url
 
 
@@ -30,7 +30,7 @@ app =
 
 init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
 init url key =
-    ( FrontendModel key [ Card "test frontend prompt" "test frontend ans" ]
+    ( FrontendModel key [] []
       -- no cards, we fetch from backend??
     , Cmd.none
     )
@@ -72,28 +72,105 @@ updateFromBackend msg model =
             -- TODO: this!
             ( { model | cards = cards_ }, Cmd.none )
 
+        UserJoined newUser ->
+            ( { model | liveUsers = model.liveUsers ++ [ newUser ] }, Cmd.none )
+
+        UserLeft oldUser ->
+            let
+                updatedUsers =
+                    List.filter (\u -> not <| u.clientId == oldUser.clientId) model.liveUsers
+            in
+            -- TODO: This!
+            ( { model | liveUsers = updatedUsers }, Cmd.none )
+
 
 view : Model -> Browser.Document FrontendMsg
 view model =
     { title = "This is the title"
-    , body = viewElements model
+    , body = viewLayout model
     }
 
 
-viewElements : Model -> List (Html FrontendMsg)
-viewElements model =
-    [ layout [ width fill, Background.color <| rgb255 255 255 255 ]
-        (el [] <| column [] <| List.map viewCard model.cards)
+viewMarkDown : Model -> Element FrontendMsg
+viewMarkDown model =
+    E.row [ E.width E.fill ]
+        [ EI.multiline [ E.width <| E.px 40 ] 
+        { onChange = MarkdownInputChanged
+        , text = model.markdown
+        , placeholder = Nothing
+        , label = EI.labelHidden "Markd own input"
+        , spellcheck = False
+        }
+        , case markdownView (mkRenderer )
+
+
+markdownView : Markdown.Renderer.Renderer (Element Msg) -> String -> Result String (List (Element Msg))
+markdownView renderer markdown =
+    markdown
+        |> Markdown.Parser.parse
+        |> Result.mapError (\error -> error |> List.map Markdown.Parser.deadEndToString |> String.join "\n")
+        |> Result.andThen (Markdown.Renderer.render renderer)
+
+
+viewLayout : Model -> List (Html FrontendMsg)
+viewLayout model =
+    [ layout [ width fill, EB.color <| rgb255 255 255 255 ]
+        (el [] <| viewElements model)
     ]
+
+
+viewElements : Model -> Element FrontendMsg
+viewElements model =
+    column []
+        [ column [] <| List.map viewCard model.cards
+        , E.text <| "Currently connected users:"
+        , viewLiveUsersTable model.liveUsers
+        ]
 
 
 viewCard : Card -> Element FrontendMsg
 viewCard card =
     row [ padding 20 ]
-        [ Element.text card.prompt
-        , Element.text " | "
-        , Element.text card.answer
+        [ E.text card.prompt
+        , E.text " | "
+        , E.text card.answer
         ]
+
+
+viewLiveUsersTable : List LiveUser -> Element FrontendMsg
+viewLiveUsersTable users =
+    E.table
+        [ E.centerX
+        , E.centerY
+        , E.spacing 5
+        , E.padding 10
+        ]
+        { data = users
+        , columns =
+            [ { header = E.text "Session Id:"
+              , width = px 200
+              , view =
+                    \u ->
+                        E.text u.sessionId
+              }
+            , { header = E.text "Client Id:"
+              , width = fill
+              , view =
+                    \u ->
+                        E.text u.clientId
+              }
+            ]
+        }
+
+
+viewLiveUser : LiveUser -> Element FrontendMsg
+viewLiveUser u =
+    E.row [] [ E.text <| u.sessionId ++ ":" ++ u.clientId ++ " is here!" ]
+
+
+viewLiveUsers : List LiveUser -> List (Element FrontendMsg)
+viewLiveUsers liveUsers =
+    List.map viewLiveUser liveUsers
 
 
 viewNav : Model -> Element FrontendMsg
