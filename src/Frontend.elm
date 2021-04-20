@@ -105,7 +105,11 @@ viewLayout model =
 
 viewElements : Model -> Element FrontendMsg
 viewElements model =
-    column [ E.centerX ]
+    column
+        [ E.centerX
+        , E.width <| E.px 800
+        , EB.color <| rgb255 240 100 100 -- eggshell white
+        ]
         [ viewCells model.cells
         , E.text <| "Currently connected users:"
         , viewLiveUsersTable model.liveUsers
@@ -140,13 +144,21 @@ viewLiveUsersTable users =
 
 viewCells : Array Cell -> Element FrontendMsg
 viewCells cells =
-    E.column [] <|
+    E.column
+        [ E.width E.fill
+        , EB.color <| E.rgb255 100 100 154
+        ]
+    <|
         List.map viewCell (Array.toList cells)
 
 
 viewCell : Cell -> Element FrontendMsg
 viewCell cell =
-    row [] <|
+    row
+        [ E.padding 20
+        , E.width E.fill
+        ]
+    <|
         [ EI.multiline
             []
             { onChange = \text -> CellTextChanged text 0
