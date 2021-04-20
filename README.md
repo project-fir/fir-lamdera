@@ -3,7 +3,7 @@
 Vision: [VSCode](https://code.visualstudio.com/) combined with [LitViz](https://github.com/gicentre/litvis) combined with [Figma](https://www.figma.com/), but completely infected with the Elm
 philosophy. If it isn't Elm/Lamdera we don't use it, no JavaScript, no TypeScript, no ports, period. I believe this will take (some) power away from highly technical non-domain experts, allowing [domain experts](https://www.youtube.com/watch?v=PLFl95c-IiU&t=2115s) to do their work without it being polluted by non-domain concerns (like null-pointer exceptions and dependency hell).
 
-I've decided to go with (Lamdera)[https://dashboard.lamdera.app/features] to implement the protype.
+I've decided to go with (Lamdera)[https://dashboard.lamdera.app/features] to implement the protype, huge thanks to [Mario Rogic](https://github.com/supermario)
 
 
 ### Development setup:
