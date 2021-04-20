@@ -1,3 +1,10 @@
+### Fir ((Lamdera)[https://dashboard.lamdera.app/features] prototype)
+
+Vision: (VSCode)[] combined with (LitViz)[https://github.com/gicentre/litvis] combined with (Figma)[https://www.figma.com/], but completely infected with the Elm
+philosophy. If it isn't Elm we don't use it, 100% absolutist. I believe this will take (some) power away from highly technical non-domain experts, allowing 
+domain experts to do their work without it being polluted by non-domain concerns (like null-pointer exceptions and dependency hell).
+
+
 This assumes you have docker ready to go, and you've already cloned this repo to your dev machine
 
 ```
