@@ -3,7 +3,7 @@
 Vision: [VSCode](https://code.visualstudio.com/) combined with [LitViz](https://github.com/gicentre/litvis) combined with [Figma](https://www.figma.com/), but completely infected with the Elm
 philosophy. If it isn't Elm/Lamdera we don't use it, no JavaScript, no TypeScript, no ports, period. I believe this will take (some) power away from highly technical non-domain experts, allowing [domain experts](https://www.youtube.com/watch?v=PLFl95c-IiU&t=2115s) to do their work without it being polluted by non-domain concerns (like null-pointer exceptions and dependency hell).
 
-I've decided to go with (Lamdera)[https://dashboard.lamdera.app/features] to implement the protype, huge thanks to [Mario Rogic](https://github.com/supermario)
+I've decided to go with [Lamdera](https://dashboard.lamdera.app/features) (an extention of Elm) to implement the protype. Huge thanks to [Mario Rogic](https://github.com/supermario) for his work on Lamdera!
 
 
 ### Development setup:
@@ -36,6 +36,6 @@ docker-compose dev up
        * each cell has one global lock, other clients see a gray-ed out box, with live updates being broadcasted/received
        * client can release lock, locks are auto release upon disconnected, and broacasted to other clients
        * state of cells and text typed inside persists out on the interwebz
-   * Not a definition, but ideas for v0.2: Goal, learn what is going to be hard about bring good autocomplete to a collaborative LitViz IDE
-       * collaborative "turle" language for drawing
+   * Not a definition, but ideas for v0.2: Goal, learn what is going to be hard about bring good autocomplete to a collaborative LitViz-like IDE
+       * collaborative "turtle" (I've also heard it called Logo) language for drawing
        * really good auto complete and it's supporting UX, almost laughably good for a trivial language
