@@ -2,7 +2,7 @@ module Backend exposing (..)
 
 import Html
 import Lamdera exposing (ClientId, SessionId, broadcast, sendToFrontend)
-import Types exposing (BackendModel, BackendMsg(..), Card, LiveUser, ToBackend(..), ToFrontend(..))
+import Types exposing (BackendModel, BackendMsg(..), Cell, LiveUser, ToBackend(..), ToFrontend(..))
 
 
 type alias Model =
@@ -20,7 +20,7 @@ app =
 
 init : ( Model, Cmd BackendMsg )
 init =
-    ( BackendModel [ Card "test backend init prompt" "test backend ans", Card "meaning of life?" "42" ] []
+    ( BackendModel [] []
     , Cmd.none
     )
 
@@ -41,8 +41,8 @@ update msg model =
             in
             ( { model | liveUsers = newLiveUsers }
             , Cmd.batch
-                [ sendToFrontend clientId (HistoryReceived model.cards)
-                , broadcast <| UserJoined newUser
+                [ sendToFrontend clientId (PushCellsState model.cells)
+                , broadcast <| BroadcastUserJoined newUser
                 ]
             )
 
@@ -54,18 +54,18 @@ update msg model =
                 updatedUsers =
                     List.filter (\u -> not <| oldUser.clientId == u.clientId) model.liveUsers
             in
-            ( { model | liveUsers = updatedUsers }, Cmd.batch [ broadcast <| UserLeft oldUser ] )
+            ( { model | liveUsers = updatedUsers }, Cmd.batch [ broadcast <| BroadcastUserLeft oldUser ] )
 
 
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
 updateFromFrontend sessionId clientId msg model =
     case msg of
-        SubmitNewCard card ->
+        SubmitNewCell newCell ->
             let
-                cards_ =
-                    model.cards ++ [ card ]
+                updatedCells =
+                    model.cells ++ [ newCell ]
             in
-            ( { model | cards = cards_ }, Cmd.none )
+            ( { model | cells = updatedCells }, Cmd.none )
 
         FetchHistory ->
             ( model, Cmd.none )

@@ -1,5 +1,6 @@
 module Frontend exposing (..)
 
+import Array exposing (Array)
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Nav
 import Element as E exposing (..)
@@ -8,7 +9,7 @@ import Element.Input as EI exposing (..)
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Lamdera exposing (..)
-import Types exposing (Card, FrontendModel, FrontendMsg(..), LiveUser, ToFrontend(..))
+import Types exposing (BackendMsg(..), Cell, FrontendModel, FrontendMsg(..), LiveUser, ToFrontend(..))
 import Url
 
 
@@ -23,14 +24,14 @@ app =
         , onUrlChange = UrlChanged
         , update = update
         , updateFromBackend = updateFromBackend
-        , subscriptions = \m -> Sub.none
+        , subscriptions = \_ -> Sub.none
         , view = view
         }
 
 
 init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
 init url key =
-    ( FrontendModel key [] []
+    ( FrontendModel key (Array.fromList [ Cell "" ]) []
       -- no cards, we fetch from backend??
     , Cmd.none
     )
@@ -54,33 +55,29 @@ update msg model =
         UrlChanged url ->
             ( model, Cmd.none )
 
-        NoOpFrontendMsg ->
-            ( model, Cmd.none )
+        CellTextChanged newText ix ->
+            let
+                updatedCells =
+                    Array.set ix (Cell newText) model.cells
+            in
+            ( { model | cells = updatedCells }, Cmd.none )
 
 
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
 updateFromBackend msg model =
     case msg of
-        HistoryReceived cs ->
-            ( { model | cards = cs }, Cmd.none )
+        PushCellsState cells ->
+            -- TODO: q for #lamdera I believe this'll trample state, right? But is there Lamdera magic?
+            ( model, Cmd.none )
 
-        CardReceived card ->
-            let
-                cards_ =
-                    model.cards ++ [ card ]
-            in
-            -- TODO: this!
-            ( { model | cards = cards_ }, Cmd.none )
-
-        UserJoined newUser ->
+        BroadcastUserJoined newUser ->
             ( { model | liveUsers = model.liveUsers ++ [ newUser ] }, Cmd.none )
 
-        UserLeft oldUser ->
+        BroadcastUserLeft oldUser ->
             let
                 updatedUsers =
-                    List.filter (\u -> not <| u.clientId == oldUser.clientId) model.liveUsers
+                    List.filter (\lu -> lu /= oldUser) model.liveUsers
             in
-            -- TODO: This!
             ( { model | liveUsers = updatedUsers }, Cmd.none )
 
 
@@ -91,49 +88,31 @@ view model =
     }
 
 
-viewMarkDown : Model -> Element FrontendMsg
-viewMarkDown model =
-    E.row [ E.width E.fill ]
-        [ EI.multiline [ E.width <| E.px 40 ] 
-        { onChange = MarkdownInputChanged
-        , text = model.markdown
-        , placeholder = Nothing
-        , label = EI.labelHidden "Markd own input"
-        , spellcheck = False
-        }
-        , case markdownView (mkRenderer )
-
-
-markdownView : Markdown.Renderer.Renderer (Element Msg) -> String -> Result String (List (Element Msg))
-markdownView renderer markdown =
-    markdown
-        |> Markdown.Parser.parse
-        |> Result.mapError (\error -> error |> List.map Markdown.Parser.deadEndToString |> String.join "\n")
-        |> Result.andThen (Markdown.Renderer.render renderer)
-
-
 viewLayout : Model -> List (Html FrontendMsg)
 viewLayout model =
-    [ layout [ width fill, EB.color <| rgb255 255 255 255 ]
-        (el [] <| viewElements model)
+    [ layout
+        []
+        (el
+            [ E.width E.fill
+            , E.height <| E.fill
+            , EB.color <| rgb255 240 234 214 -- eggshell white
+            , E.padding 20
+            ]
+            (viewElements model)
+        )
     ]
 
 
 viewElements : Model -> Element FrontendMsg
 viewElements model =
-    column []
-        [ column [] <| List.map viewCard model.cards
+    column
+        [ E.centerX
+        , E.width <| E.px 800
+        , EB.color <| rgb255 240 100 100 -- eggshell white
+        ]
+        [ viewCells model.cells
         , E.text <| "Currently connected users:"
         , viewLiveUsersTable model.liveUsers
-        ]
-
-
-viewCard : Card -> Element FrontendMsg
-viewCard card =
-    row [ padding 20 ]
-        [ E.text card.prompt
-        , E.text " | "
-        , E.text card.answer
         ]
 
 
@@ -163,35 +142,29 @@ viewLiveUsersTable users =
         }
 
 
-viewLiveUser : LiveUser -> Element FrontendMsg
-viewLiveUser u =
-    E.row [] [ E.text <| u.sessionId ++ ":" ++ u.clientId ++ " is here!" ]
+viewCells : Array Cell -> Element FrontendMsg
+viewCells cells =
+    E.column
+        [ E.width E.fill
+        , EB.color <| E.rgb255 100 100 154
+        ]
+    <|
+        List.map viewCell (Array.toList cells)
 
 
-viewLiveUsers : List LiveUser -> List (Element FrontendMsg)
-viewLiveUsers liveUsers =
-    List.map viewLiveUser liveUsers
-
-
-viewNav : Model -> Element FrontendMsg
-viewNav model =
-    column [] (List.map viewCard model.cards)
-
-
-
--- row [ centerX, padding 10, spacing 100 ]
---     [ Input.button [ spacing 100 ]
---         { onPress = Just <| ClickedNavToHome model
---         , label = el [] (text "Home")
---         }
---     , text " | "
---     , Input.button []
---         { onPress = Just <| ClickedNavToTodaysCards model
---         , label = el [] (text "Today's Cards")
---         }
---     , text " | "
---     , Input.button []
---         { onPress = Just <| ClickedNavToCreateCard model
---         , label = el [] (text "Create Cards")
---         }
---     ]
+viewCell : Cell -> Element FrontendMsg
+viewCell cell =
+    row
+        [ E.padding 20
+        , E.width E.fill
+        ]
+    <|
+        [ EI.multiline
+            []
+            { onChange = \text -> CellTextChanged text 0
+            , text = cell.text
+            , placeholder = Just <| EI.placeholder [] (E.text "Start typing here!")
+            , label = EI.labelHidden "TODO: What to put here?"
+            , spellcheck = True
+            }
+        ]
