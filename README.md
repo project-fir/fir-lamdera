@@ -26,3 +26,6 @@ docker-compose dev up
        * each cell has one global lock, other clients see a gray-ed out box, with live updates being broadcasted/received
        * client can release lock, locks are auto release upon disconnected, and broacasted to other clients
        * state of cells and text typed inside persists out on the interwebz
+   * Not a definition, but ideas for v0.2: Goal, learn what is going to be hard about bring good autocomplete to a collaborative LitViz IDE
+       * collaborative "turle" language for drawing
+       * really good auto complete and it's supporting UX, almost laughably good for a trivial language
