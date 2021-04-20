@@ -1,5 +1,6 @@
 module Types exposing (..)
 
+import Array exposing (Array)
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
 import Lamdera exposing (ClientId, SessionId)
@@ -7,8 +8,8 @@ import Url exposing (Url)
 
 
 type alias FrontendModel =
-    { key : Key
-    , cards : List Card
+    { key : Key -- TODO: what's key for??
+    , cells : Array Cell
     , liveUsers : List LiveUser
     }
 
@@ -22,25 +23,28 @@ type alias LiveUser =
 
 
 type alias BackendModel =
-    { cards : List Card
+    { cells : List Cell
     , liveUsers : List LiveUser
     }
 
 
-type alias Card =
-    { prompt : String
-    , answer : String
+type alias Cell =
+    { text : String
     }
+
+
+type alias CellIndex =
+    Int
 
 
 type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
-    | NoOpFrontendMsg
+    | CellTextChanged String CellIndex
 
 
 type ToBackend
-    = SubmitNewCard Card
+    = SubmitNewCell Cell
     | FetchHistory
 
 
@@ -51,7 +55,6 @@ type BackendMsg
 
 
 type ToFrontend
-    = HistoryReceived (List Card)
-    | CardReceived Card
+    = PushCellsState (List Cell)
     | BroadcastUserJoined LiveUser
     | BroadcastUserLeft LiveUser
