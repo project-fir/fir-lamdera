@@ -1,4 +1,4 @@
-This assumes you have docker ready to go
+This assumes you have docker ready to go, and you've already cloned this repo to your dev machine
 
 ```
 cd /into/this/directory
