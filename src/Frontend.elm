@@ -135,7 +135,7 @@ viewElements model =
     column
         [ E.centerX
         , E.width <| E.px 800
-        , EB.color <| elementFromColor <| C.rgb255 255 255 255 -- eggshell white
+        , EB.color <| elementFromColor <| C.white
         ]
         [ viewCurrentCollaboratorsPanel model.liveUsers
         , viewCells model.cells

@@ -54,6 +54,7 @@ type ToBackend
 type BackendMsg
     = ClientConnected SessionId ClientId -- TODO: we are not fetching those in the room at the time of connecting!!
     | ClientDisconnected SessionId ClientId -- TODO: ^^ how do we write unit tests for this? Does elm-test work?
+    | GotDisplayColorAssignment ( Maybe Color, List Color )
 
 
 

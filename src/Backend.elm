@@ -29,13 +29,37 @@ init =
     )
 
 
+assignColor : Cmd BackendMsg
+assignColor =
+    Random.generate GotDisplayColorAssignment colorGenerator
+
+
+parseColor : Maybe Color -> Color
+parseColor color =
+    case color of
+        Just c ->
+            c
+
+        Nothing ->
+            lightBrown
+
+
 update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
 update msg model =
     case msg of
         ClientConnected sessionId clientId ->
+            ( model, assignColor )
+
+        GotDisplayColorAssignment ( color, _ ) ->
             let
+                sessionId =
+                    "fakeSessionId"
+
+                clientId =
+                    "fakeClientId"
+
                 newUser =
-                    createLiveUser sessionId clientId
+                    LiveUser sessionId clientId (parseColor color)
 
                 newLiveUsers =
                     Dict.insert ( sessionId, clientId ) newUser model.liveUsers
@@ -68,11 +92,6 @@ createLiveUser sessionId clientId =
     LiveUser sessionId clientId assignedColor
 
 
-
--- AssignColorToUser color ->
---     ( model, Cmd.none )
-
-
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
 updateFromFrontend sessionId clientId msg model =
     case msg of
@@ -94,10 +113,13 @@ subscriptions model =
         ]
 
 
-assignColor : Generator ( Maybe Color, List Color )
-assignColor =
+colorGenerator : Generator ( Maybe Color, List Color )
+colorGenerator =
+    -- TODO: I'd like to return Generator Color (I'd settle for Generator (Maybe Color),
+    -- but having this List floating around feels weird to me)
     let
         colors =
+            -- TODO: Custom palette; these colors are more "neon" than what I'm going for
             [ red
             , orange
             , yellow
