@@ -3,6 +3,8 @@ module Frontend exposing (..)
 import Array exposing (Array)
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Nav
+import Color as C exposing (..)
+import Dict
 import Element as E exposing (..)
 import Element.Background as EB exposing (..)
 import Element.Input as EI exposing (..)
@@ -31,7 +33,7 @@ app =
 
 init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
 init url key =
-    ( FrontendModel key (Array.fromList [ Cell "" ]) []
+    ( FrontendModel key (Array.fromList [ Cell "" ]) Dict.empty
       -- no cards, we fetch from backend??
     , Cmd.none
     )
@@ -71,12 +73,21 @@ updateFromBackend msg model =
             ( model, Cmd.none )
 
         BroadcastUserJoined newUser ->
-            ( { model | liveUsers = model.liveUsers ++ [ newUser ] }, Cmd.none )
+            let
+                updatedUsers =
+                    Dict.insert ( newUser.sessionId, newUser.clientId ) newUser model.liveUsers
+            in
+            ( { model | liveUsers = updatedUsers }, Cmd.none )
 
         BroadcastUserLeft oldUser ->
             let
                 updatedUsers =
-                    List.filter (\lu -> lu /= oldUser) model.liveUsers
+                    case oldUser of
+                        Just ou ->
+                            Dict.remove ( ou.sessionId, ou.clientId ) model.liveUsers
+
+                        Nothing ->
+                            model.liveUsers
             in
             ( { model | liveUsers = updatedUsers }, Cmd.none )
 
@@ -95,7 +106,7 @@ viewLayout model =
         (el
             [ E.width E.fill
             , E.height <| E.fill
-            , EB.color <| rgb255 240 234 214 -- eggshell white
+            , EB.color <| elementFromColor <| C.rgb255 240 234 214 -- eggshell white
             , E.padding 20
             ]
             (viewElements model)
@@ -103,43 +114,32 @@ viewLayout model =
     ]
 
 
+viewIndicator : LiveUser -> Element FrontendMsg
+viewIndicator user =
+    E.el [ E.padding 10, EB.color <| elementFromColor C.lightBrown ] <| E.text "+"
+
+
+viewCurrentCollaboratorsPanel : Dict.Dict ( SessionId, ClientId ) LiveUser -> Element FrontendMsg
+viewCurrentCollaboratorsPanel users =
+    let
+        -- TODO: I believe this list sort order is deterministic by conincidence (across clients), I'm cool with that for this use-case but what if I wasn't?
+        ul =
+            Dict.values users
+    in
+    E.row [ E.padding 10, E.spacingXY 10 10 ] <|
+        List.map viewIndicator ul
+
+
 viewElements : Model -> Element FrontendMsg
 viewElements model =
     column
         [ E.centerX
         , E.width <| E.px 800
-        , EB.color <| rgb255 240 100 100 -- eggshell white
+        , EB.color <| elementFromColor <| C.rgb255 255 255 255 -- eggshell white
         ]
-        [ viewCells model.cells
-        , E.text <| "Currently connected users:"
-        , viewLiveUsersTable model.liveUsers
+        [ viewCurrentCollaboratorsPanel model.liveUsers
+        , viewCells model.cells
         ]
-
-
-viewLiveUsersTable : List LiveUser -> Element FrontendMsg
-viewLiveUsersTable users =
-    E.table
-        [ E.centerX
-        , E.centerY
-        , E.spacing 5
-        , E.padding 10
-        ]
-        { data = users
-        , columns =
-            [ { header = E.text "Session Id:"
-              , width = px 200
-              , view =
-                    \u ->
-                        E.text u.sessionId
-              }
-            , { header = E.text "Client Id:"
-              , width = fill
-              , view =
-                    \u ->
-                        E.text u.clientId
-              }
-            ]
-        }
 
 
 viewCells : Array Cell -> Element FrontendMsg
@@ -155,7 +155,7 @@ viewCells cells =
 viewCell : Cell -> Element FrontendMsg
 viewCell cell =
     row
-        [ E.padding 20
+        [ E.padding 0
         , E.width E.fill
         ]
     <|
@@ -168,3 +168,8 @@ viewCell cell =
             , spellcheck = True
             }
         ]
+
+
+elementFromColor : C.Color -> E.Color
+elementFromColor c =
+    E.fromRgb <| C.toRgba c

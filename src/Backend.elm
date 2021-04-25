@@ -1,7 +1,11 @@
 module Backend exposing (..)
 
+import Color exposing (..)
+import Dict exposing (..)
 import Html
 import Lamdera exposing (ClientId, SessionId, broadcast, sendToFrontend)
+import Random exposing (Generator, generate)
+import Random.List as RL exposing (choose)
 import Types exposing (BackendModel, BackendMsg(..), Cell, LiveUser, ToBackend(..), ToFrontend(..))
 
 
@@ -20,7 +24,7 @@ app =
 
 init : ( Model, Cmd BackendMsg )
 init =
-    ( BackendModel [] []
+    ( BackendModel [] Dict.empty
     , Cmd.none
     )
 
@@ -28,16 +32,13 @@ init =
 update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
 update msg model =
     case msg of
-        NoOpBackendMsg ->
-            ( model, Cmd.none )
-
         ClientConnected sessionId clientId ->
             let
                 newUser =
-                    LiveUser sessionId clientId
+                    createLiveUser sessionId clientId
 
                 newLiveUsers =
-                    model.liveUsers ++ [ newUser ]
+                    Dict.insert ( sessionId, clientId ) newUser model.liveUsers
             in
             ( { model | liveUsers = newLiveUsers }
             , Cmd.batch
@@ -49,12 +50,27 @@ update msg model =
         ClientDisconnected sessionId clientId ->
             let
                 oldUser =
-                    LiveUser sessionId clientId
+                    Dict.get ( sessionId, clientId ) model.liveUsers
 
                 updatedUsers =
-                    List.filter (\u -> not <| oldUser.clientId == u.clientId) model.liveUsers
+                    Dict.remove ( sessionId, clientId ) model.liveUsers
             in
             ( { model | liveUsers = updatedUsers }, Cmd.batch [ broadcast <| BroadcastUserLeft oldUser ] )
+
+
+createLiveUser : SessionId -> ClientId -> LiveUser
+createLiveUser sessionId clientId =
+    let
+        assignedColor =
+            -- TODO: Generator stuff???
+            lightCharcoal
+    in
+    LiveUser sessionId clientId assignedColor
+
+
+
+-- AssignColorToUser color ->
+--     ( model, Cmd.none )
 
 
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
@@ -76,3 +92,44 @@ subscriptions model =
         [ Lamdera.onConnect ClientConnected
         , Lamdera.onDisconnect ClientDisconnected
         ]
+
+
+assignColor : Generator ( Maybe Color, List Color )
+assignColor =
+    let
+        colors =
+            [ red
+            , orange
+            , yellow
+            , green
+            , blue
+            , purple
+            , brown
+            , lightRed
+            , lightOrange
+            , lightYellow
+            , lightGreen
+            , lightBlue
+            , lightPurple
+            , lightBrown
+            , darkRed
+            , darkOrange
+            , darkYellow
+            , darkGreen
+            , darkBlue
+            , darkPurple
+            , darkBrown
+            , white
+            , lightGrey
+            , grey
+            , darkGrey
+            , lightCharcoal
+            , charcoal
+            , darkCharcoal
+            , black
+            , lightGray
+            , gray
+            , darkGray
+            ]
+    in
+    RL.choose colors
