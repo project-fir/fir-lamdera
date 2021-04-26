@@ -39,3 +39,7 @@ docker-compose dev up
    * Not a definition, but ideas for v0.2: Goal, learn what is going to be hard about bring good autocomplete to a collaborative LitViz-like IDE
        * collaborative "turtle" (I've also heard it called Logo) language for drawing
        * really good auto complete and it's supporting UX, almost laughably good for a trivial language
+ * 4/24-4/25: With the goal of assigning a random color to a live collaborators "live tile", I hit an unexpected rabbit hole, random number generators.
+   * Turns out drawing a random number has side effects, I was unaware of this so spent time reading about why. I think I get it now and have a branch with
+     random number generation working. Now I need to figure out how to wire up a series of events to build a user + pass along to generator + return to frontend
+   * Found some sources of inspiration re, text editors: https://dkodaj.github.io/rte/, https://package.elm-lang.org/packages/mweiss/elm-rte-toolkit/latest/
