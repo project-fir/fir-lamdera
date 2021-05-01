@@ -77,10 +77,17 @@ update msg model =
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
 updateFromFrontend sessionId clientId msg model =
     case msg of
-        SubmitNewCell ix newCell ->
-            ( { model | cells = Dict.insert ix newCell model.cells }
+        SubmitNewCell ix ->
+            let
+                newCell =
+                    Cell ""
+
+                updatedModel =
+                    { model | cells = Dict.insert ix newCell model.cells }
+            in
+            ( updatedModel
             , Cmd.batch
-                [ Lamdera.broadcast <| PushCellsState model.cells
+                [ Lamdera.broadcast <| PushCellsState updatedModel.cells
                 ]
             )
 

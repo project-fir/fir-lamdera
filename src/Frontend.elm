@@ -73,13 +73,10 @@ update msg model =
             let
                 cellIndex =
                     Dict.size model.cells + 1
-
-                newCell =
-                    Cell ""
             in
             ( model
             , Cmd.batch
-                [ Lamdera.sendToBackend (SubmitNewCell cellIndex newCell)
+                [ Lamdera.sendToBackend (SubmitNewCell cellIndex)
                 ]
             )
 
@@ -87,9 +84,9 @@ update msg model =
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
 updateFromBackend msg model =
     case msg of
-        PushCellsState newCells ->
+        PushCellsState updatedCells ->
             -- TODO: q for #lamdera I believe this'll trample state, right? But is there Lamdera magic?
-            ( { model | cells = newCells }, Cmd.none )
+            ( { model | cells = updatedCells }, Cmd.none )
 
         PushCurrentLiveUsers liveUsers ->
             ( { model | liveUsers = liveUsers }, Cmd.none )

@@ -47,7 +47,7 @@ type FrontendMsg
 
 
 type ToBackend
-    = SubmitNewCell CellIndex Cell
+    = SubmitNewCell CellIndex
     | PostCellState (Dict CellIndex Cell)
 
 
