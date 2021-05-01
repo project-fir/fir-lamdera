@@ -1,17 +1,11 @@
 module Frontend exposing (..)
 
-import Array exposing (Array)
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Nav
-import Color as C exposing (..)
-import Dict
-import Element as E exposing (..)
-import Element.Background as EB exposing (..)
-import Element.Input as EI exposing (..)
-import Html exposing (Html)
+import Html
 import Html.Attributes as Attr
-import Lamdera exposing (..)
-import Types exposing (BackendMsg(..), Cell, CellIndex, FrontendModel, FrontendMsg(..), LiveUser, ToBackend(..), ToFrontend(..))
+import Lamdera
+import Types exposing (..)
 import Url
 
 
@@ -26,14 +20,16 @@ app =
         , onUrlChange = UrlChanged
         , update = update
         , updateFromBackend = updateFromBackend
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = \m -> Sub.none
         , view = view
         }
 
 
 init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
-init _ key =
-    ( FrontendModel key Dict.empty Dict.empty
+init url key =
+    ( { key = key
+      , message = "Welcome to Lamdera! You're looking at the auto-generated base implementation. Check out src/Frontend.elm to start coding!"
+      }
     , Cmd.none
     )
 
@@ -56,147 +52,27 @@ update msg model =
         UrlChanged url ->
             ( model, Cmd.none )
 
-        CellTextChanged newText ix ->
-            let
-                updatedCell =
-                    Cell newText
-
-                updatedCells =
-                    Dict.insert ix updatedCell model.cells
-            in
-            ( { model | cells = updatedCells }
-            , Cmd.batch
-                [ Lamdera.sendToBackend (PostCellState updatedCells) ]
-            )
-
-        ClickedCreateCell ->
-            let
-                cellIndex =
-                    Dict.size model.cells + 1
-            in
-            ( model
-            , Cmd.batch
-                [ Lamdera.sendToBackend (SubmitNewCell cellIndex)
-                ]
-            )
+        NoOpFrontendMsg ->
+            ( model, Cmd.none )
 
 
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
 updateFromBackend msg model =
     case msg of
-        PushCellsState updatedCells ->
-            -- TODO: q for #lamdera I believe this'll trample state, right? But is there Lamdera magic?
-            ( { model | cells = updatedCells }, Cmd.none )
-
-        PushCurrentLiveUsers liveUsers ->
-            ( { model | liveUsers = liveUsers }, Cmd.none )
+        NoOpToFrontend ->
+            ( model, Cmd.none )
 
 
-view : Model -> Browser.Document FrontendMsg
 view model =
-    { title = "This is the title"
-    , body = viewLayout model
-    }
-
-
-viewLayout : Model -> List (Html FrontendMsg)
-viewLayout model =
-    [ layout
-        []
-        (el
-            [ E.width E.fill
-            , E.height <| E.fill
-            , EB.color <| elementFromColor <| C.rgb255 240 234 214 -- eggshell white
-            , E.padding 20
-            ]
-            (viewElements model)
-        )
-    ]
-
-
-viewCurrentCollaboratorsPanel : Dict.Dict ( SessionId, ClientId ) LiveUser -> Element FrontendMsg
-viewCurrentCollaboratorsPanel users =
-    let
-        ul =
-            Dict.values users
-    in
-    E.row [ E.padding 10, E.spacingXY 10 10 ]
-        [ E.table [ E.padding 10 ]
-            { data = ul
-            , columns =
-                [ { header = E.text "Client Id"
-                  , width = E.fill
-                  , view = \u -> E.text u.clientId
-                  }
+    { title = ""
+    , body =
+        [ Html.div [ Attr.style "text-align" "center", Attr.style "padding-top" "40px" ]
+            [ Html.img [ Attr.src "https://lamdera.app/lamdera-logo-black.png", Attr.width 150 ] []
+            , Html.div
+                [ Attr.style "font-family" "sans-serif"
+                , Attr.style "padding-top" "40px"
                 ]
-            }
-        ]
-
-
-viewAddCellButton : Element FrontendMsg
-viewAddCellButton =
-    E.row []
-        [ EI.button
-            [ EB.color <| E.rgb255 238 238 238
+                [ Html.text model.message ]
             ]
-            { onPress = Just ClickedCreateCell
-            , label = E.text "+"
-            }
         ]
-
-
-viewElements : Model -> Element FrontendMsg
-viewElements model =
-    column
-        [ E.centerX
-        , E.width <| E.px 800
-        , EB.color <| elementFromColor <| C.white
-        ]
-        [ viewCurrentCollaboratorsPanel model.liveUsers
-        , viewCells model.cells
-        , viewAddCellButton
-        ]
-
-
-viewCells : Dict.Dict CellIndex Cell -> Element FrontendMsg
-viewCells cells =
-    let
-        cellsList =
-            Dict.toList cells
-    in
-    E.column
-        [ E.width E.fill
-        , EB.color <| E.rgb255 100 100 154
-        ]
-    <|
-        List.map viewCell cellsList
-
-
-viewCell : ( CellIndex, Cell ) -> Element FrontendMsg
-viewCell cell =
-    let
-        ix =
-            Tuple.first cell
-
-        c =
-            Tuple.second cell
-    in
-    row
-        [ E.padding 10
-        , E.width E.fill
-        ]
-    <|
-        [ EI.multiline
-            [ E.padding 5 ]
-            { onChange = \text -> CellTextChanged text ix
-            , text = c.text
-            , placeholder = Just <| EI.placeholder [] (E.text "Start typing here!")
-            , label = EI.labelHidden "TODO: What to put here?"
-            , spellcheck = True
-            }
-        ]
-
-
-elementFromColor : C.Color -> E.Color
-elementFromColor c =
-    E.fromRgb <| C.toRgba c
+    }
