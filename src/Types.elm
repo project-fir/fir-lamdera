@@ -21,7 +21,6 @@ type alias LiveUser =
     -- TODO: Q for #lamdera?? Would auth stuff go here? How do we avoid broadcasting private info to clients?
     { sessionId : SessionId
     , clientId : ClientId
-    , displayColor : Color
     }
 
 
@@ -55,14 +54,8 @@ type ToBackend
 type BackendMsg
     = ClientConnected SessionId ClientId -- TODO: we are not fetching those in the room at the time of connecting!!
     | ClientDisconnected SessionId ClientId -- TODO: ^^ how do we write unit tests for this? Does elm-test work?
-    | GotDisplayColorAssignment ( Maybe Color, List Color )
-
-
-
--- | AssignColorToUser Color
 
 
 type ToFrontend
     = PushCellsState (Dict CellIndex Cell)
-    | BroadcastUserJoined LiveUser
-    | BroadcastUserLeft (Maybe LiveUser) -- TODO: I feel "forced" to Maybe here, not sure if this is right
+    | PushCurrentLiveUsers (Dict ( SessionId, ClientId ) LiveUser)

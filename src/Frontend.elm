@@ -34,7 +34,6 @@ app =
 init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
 init url key =
     ( FrontendModel key Dict.empty Dict.empty
-      -- no cards, we fetch from backend??
     , Cmd.none
     )
 
@@ -89,24 +88,8 @@ updateFromBackend msg model =
             -- TODO: q for #lamdera I believe this'll trample state, right? But is there Lamdera magic?
             ( { model | cells = newCells }, Cmd.none )
 
-        BroadcastUserJoined newUser ->
-            let
-                updatedUsers =
-                    Dict.insert ( newUser.sessionId, newUser.clientId ) newUser model.liveUsers
-            in
-            ( { model | liveUsers = updatedUsers }, Cmd.none )
-
-        BroadcastUserLeft oldUser ->
-            let
-                updatedUsers =
-                    case oldUser of
-                        Just ou ->
-                            Dict.remove ( ou.sessionId, ou.clientId ) model.liveUsers
-
-                        Nothing ->
-                            model.liveUsers
-            in
-            ( { model | liveUsers = updatedUsers }, Cmd.none )
+        PushCurrentLiveUsers liveUsers ->
+            ( { model | liveUsers = liveUsers }, Cmd.none )
 
 
 view : Model -> Browser.Document FrontendMsg
@@ -131,20 +114,23 @@ viewLayout model =
     ]
 
 
-viewIndicator : LiveUser -> Element FrontendMsg
-viewIndicator user =
-    E.el [ E.padding 10, EB.color <| elementFromColor C.lightBrown ] <| E.text "+"
-
-
 viewCurrentCollaboratorsPanel : Dict.Dict ( SessionId, ClientId ) LiveUser -> Element FrontendMsg
 viewCurrentCollaboratorsPanel users =
     let
-        -- TODO: I believe this list sort order is deterministic by conincidence (across clients), I'm cool with that for this use-case but what if I wasn't?
         ul =
             Dict.values users
     in
-    E.row [ E.padding 10, E.spacingXY 10 10 ] <|
-        List.map viewIndicator ul
+    E.row [ E.padding 10, E.spacingXY 10 10 ]
+        [ E.table [ E.padding 10 ]
+            { data = ul
+            , columns =
+                [ { header = E.text "Client Id"
+                  , width = E.fill
+                  , view = \u -> E.text u.clientId
+                  }
+                ]
+            }
+        ]
 
 
 viewAddCellButton : Element FrontendMsg
@@ -174,16 +160,27 @@ viewElements model =
 
 viewCells : Dict.Dict CellIndex Cell -> Element FrontendMsg
 viewCells cells =
+    let
+        cellsList =
+            Dict.toList cells
+    in
     E.column
         [ E.width E.fill
         , EB.color <| E.rgb255 100 100 154
         ]
     <|
-        List.map viewCell (Dict.values cells)
+        List.map viewCell cellsList
 
 
-viewCell : Cell -> Element FrontendMsg
+viewCell : ( CellIndex, Cell ) -> Element FrontendMsg
 viewCell cell =
+    let
+        ix =
+            Tuple.first cell
+
+        c =
+            Tuple.second cell
+    in
     row
         [ E.padding 0
         , E.width E.fill
@@ -191,8 +188,8 @@ viewCell cell =
     <|
         [ EI.multiline
             []
-            { onChange = \text -> CellTextChanged text 0
-            , text = cell.text
+            { onChange = \text -> CellTextChanged text ix
+            , text = c.text
             , placeholder = Just <| EI.placeholder [] (E.text "Start typing here!")
             , label = EI.labelHidden "TODO: What to put here?"
             , spellcheck = True

@@ -24,14 +24,15 @@ app =
 
 init : ( Model, Cmd BackendMsg )
 init =
-    ( BackendModel Dict.empty Dict.empty
-    , Cmd.none
+    let
+        initModel =
+            BackendModel (Dict.insert 0 (Cell "") Dict.empty) Dict.empty
+    in
+    ( initModel
+    , Cmd.batch
+        [ Lamdera.broadcast <| PushCellsState initModel.cells
+        ]
     )
-
-
-assignColor : Cmd BackendMsg
-assignColor =
-    Random.generate GotDisplayColorAssignment colorGenerator
 
 
 parseColor : Maybe Color -> Color
@@ -48,48 +49,29 @@ update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
 update msg model =
     case msg of
         ClientConnected sessionId clientId ->
-            ( model, assignColor )
-
-        GotDisplayColorAssignment ( color, _ ) ->
             let
-                sessionId =
-                    "fakeSessionId"
+                updatedUsers =
+                    Dict.insert ( sessionId, clientId ) (LiveUser sessionId clientId) model.liveUsers
 
-                clientId =
-                    "fakeClientId"
-
-                newUser =
-                    LiveUser sessionId clientId (parseColor color)
-
-                newLiveUsers =
-                    Dict.insert ( sessionId, clientId ) newUser model.liveUsers
+                updatedModel =
+                    { model | liveUsers = updatedUsers }
             in
-            ( { model | liveUsers = newLiveUsers }
+            ( updatedModel
             , Cmd.batch
-                [ sendToFrontend clientId (PushCellsState model.cells)
-                , broadcast <| BroadcastUserJoined newUser
+                [ Lamdera.broadcast (PushCellsState updatedModel.cells)
+                , Lamdera.broadcast (PushCurrentLiveUsers updatedModel.liveUsers)
                 ]
             )
 
         ClientDisconnected sessionId clientId ->
             let
-                oldUser =
-                    Dict.get ( sessionId, clientId ) model.liveUsers
-
                 updatedUsers =
                     Dict.remove ( sessionId, clientId ) model.liveUsers
+
+                updatedModel =
+                    { model | liveUsers = updatedUsers }
             in
-            ( { model | liveUsers = updatedUsers }, Cmd.batch [ broadcast <| BroadcastUserLeft oldUser ] )
-
-
-createLiveUser : SessionId -> ClientId -> LiveUser
-createLiveUser sessionId clientId =
-    let
-        assignedColor =
-            -- TODO: Generator stuff???
-            lightCharcoal
-    in
-    LiveUser sessionId clientId assignedColor
+            ( updatedModel, Cmd.batch [ Lamdera.broadcast (PushCurrentLiveUsers updatedModel.liveUsers) ] )
 
 
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
@@ -106,7 +88,7 @@ updateFromFrontend sessionId clientId msg model =
             ( model, Cmd.none )
 
 
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ Lamdera.onConnect ClientConnected
         , Lamdera.onDisconnect ClientDisconnected
