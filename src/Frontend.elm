@@ -32,7 +32,7 @@ app =
 
 
 init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
-init url key =
+init _ key =
     ( FrontendModel key Dict.empty Dict.empty
     , Cmd.none
     )
@@ -64,19 +64,19 @@ update msg model =
                 updatedCells =
                     Dict.insert ix updatedCell model.cells
             in
-            ( { model | cells = updatedCells }, Cmd.none )
+            ( { model | cells = updatedCells }
+            , Cmd.batch
+                [ Lamdera.sendToBackend (PostCellState updatedCells) ]
+            )
 
         ClickedCreateCell ->
             let
                 cellIndex =
                     Dict.size model.cells + 1
-
-                newCell =
-                    Cell ""
             in
             ( model
             , Cmd.batch
-                [ Lamdera.sendToBackend (SubmitNewCell cellIndex newCell)
+                [ Lamdera.sendToBackend (SubmitNewCell cellIndex)
                 ]
             )
 
@@ -84,9 +84,9 @@ update msg model =
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
 updateFromBackend msg model =
     case msg of
-        PushCellsState newCells ->
+        PushCellsState updatedCells ->
             -- TODO: q for #lamdera I believe this'll trample state, right? But is there Lamdera magic?
-            ( { model | cells = newCells }, Cmd.none )
+            ( { model | cells = updatedCells }, Cmd.none )
 
         PushCurrentLiveUsers liveUsers ->
             ( { model | liveUsers = liveUsers }, Cmd.none )
@@ -182,12 +182,12 @@ viewCell cell =
             Tuple.second cell
     in
     row
-        [ E.padding 0
+        [ E.padding 10
         , E.width E.fill
         ]
     <|
         [ EI.multiline
-            []
+            [ E.padding 5 ]
             { onChange = \text -> CellTextChanged text ix
             , text = c.text
             , placeholder = Just <| EI.placeholder [] (E.text "Start typing here!")

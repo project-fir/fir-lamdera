@@ -16,17 +16,17 @@ type alias FrontendModel =
     }
 
 
+type alias BackendModel =
+    { cells : Dict CellIndex Cell
+    , liveUsers : Dict ( SessionId, ClientId ) LiveUser
+    }
+
+
 type alias LiveUser =
     -- a "live user" is a user that is actively working, kinda like google docs does with the color icons
     -- TODO: Q for #lamdera?? Would auth stuff go here? How do we avoid broadcasting private info to clients?
     { sessionId : SessionId
     , clientId : ClientId
-    }
-
-
-type alias BackendModel =
-    { cells : Dict CellIndex Cell
-    , liveUsers : Dict ( SessionId, ClientId ) LiveUser
     }
 
 
@@ -47,8 +47,8 @@ type FrontendMsg
 
 
 type ToBackend
-    = SubmitNewCell CellIndex Cell
-    | FetchHistory
+    = SubmitNewCell CellIndex
+    | PostCellState (Dict CellIndex Cell)
 
 
 type BackendMsg
