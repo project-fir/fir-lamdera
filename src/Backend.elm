@@ -24,7 +24,7 @@ app =
 
 init : ( Model, Cmd BackendMsg )
 init =
-    ( BackendModel [] Dict.empty
+    ( BackendModel Dict.empty Dict.empty
     , Cmd.none
     )
 
@@ -95,12 +95,12 @@ createLiveUser sessionId clientId =
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
 updateFromFrontend sessionId clientId msg model =
     case msg of
-        SubmitNewCell newCell ->
-            let
-                updatedCells =
-                    model.cells ++ [ newCell ]
-            in
-            ( { model | cells = updatedCells }, Cmd.none )
+        SubmitNewCell ix newCell ->
+            ( { model | cells = Dict.insert ix newCell model.cells }
+            , Cmd.batch
+                [ Lamdera.broadcast <| PushCellsState model.cells
+                ]
+            )
 
         FetchHistory ->
             ( model, Cmd.none )

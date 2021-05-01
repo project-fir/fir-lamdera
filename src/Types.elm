@@ -11,7 +11,7 @@ import Url exposing (Url)
 
 type alias FrontendModel =
     { key : Key -- TODO: what's key for??
-    , cells : Array Cell
+    , cells : Dict CellIndex Cell
     , liveUsers : Dict ( SessionId, ClientId ) LiveUser
     }
 
@@ -26,7 +26,7 @@ type alias LiveUser =
 
 
 type alias BackendModel =
-    { cells : List Cell
+    { cells : Dict CellIndex Cell
     , liveUsers : Dict ( SessionId, ClientId ) LiveUser
     }
 
@@ -44,10 +44,11 @@ type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
     | CellTextChanged String CellIndex
+    | ClickedCreateCell
 
 
 type ToBackend
-    = SubmitNewCell Cell
+    = SubmitNewCell CellIndex Cell
     | FetchHistory
 
 
@@ -62,6 +63,6 @@ type BackendMsg
 
 
 type ToFrontend
-    = PushCellsState (List Cell)
+    = PushCellsState (Dict CellIndex Cell)
     | BroadcastUserJoined LiveUser
     | BroadcastUserLeft (Maybe LiveUser) -- TODO: I feel "forced" to Maybe here, not sure if this is right

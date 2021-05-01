@@ -11,7 +11,7 @@ import Element.Input as EI exposing (..)
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Lamdera exposing (..)
-import Types exposing (BackendMsg(..), Cell, FrontendModel, FrontendMsg(..), LiveUser, ToFrontend(..))
+import Types exposing (BackendMsg(..), Cell, CellIndex, FrontendModel, FrontendMsg(..), LiveUser, ToBackend(..), ToFrontend(..))
 import Url
 
 
@@ -33,7 +33,7 @@ app =
 
 init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
 init url key =
-    ( FrontendModel key (Array.fromList [ Cell "" ]) Dict.empty
+    ( FrontendModel key Dict.empty Dict.empty
       -- no cards, we fetch from backend??
     , Cmd.none
     )
@@ -59,18 +59,35 @@ update msg model =
 
         CellTextChanged newText ix ->
             let
+                updatedCell =
+                    Cell newText
+
                 updatedCells =
-                    Array.set ix (Cell newText) model.cells
+                    Dict.insert ix updatedCell model.cells
             in
             ( { model | cells = updatedCells }, Cmd.none )
+
+        ClickedCreateCell ->
+            let
+                cellIndex =
+                    Dict.size model.cells + 1
+
+                newCell =
+                    Cell ""
+            in
+            ( model
+            , Cmd.batch
+                [ Lamdera.sendToBackend (SubmitNewCell cellIndex newCell)
+                ]
+            )
 
 
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
 updateFromBackend msg model =
     case msg of
-        PushCellsState cells ->
+        PushCellsState newCells ->
             -- TODO: q for #lamdera I believe this'll trample state, right? But is there Lamdera magic?
-            ( model, Cmd.none )
+            ( { model | cells = newCells }, Cmd.none )
 
         BroadcastUserJoined newUser ->
             let
@@ -130,6 +147,18 @@ viewCurrentCollaboratorsPanel users =
         List.map viewIndicator ul
 
 
+viewAddCellButton : Element FrontendMsg
+viewAddCellButton =
+    E.row []
+        [ EI.button
+            [ EB.color <| E.rgb255 238 238 238
+            ]
+            { onPress = Just ClickedCreateCell
+            , label = E.text "+"
+            }
+        ]
+
+
 viewElements : Model -> Element FrontendMsg
 viewElements model =
     column
@@ -139,17 +168,18 @@ viewElements model =
         ]
         [ viewCurrentCollaboratorsPanel model.liveUsers
         , viewCells model.cells
+        , viewAddCellButton
         ]
 
 
-viewCells : Array Cell -> Element FrontendMsg
+viewCells : Dict.Dict CellIndex Cell -> Element FrontendMsg
 viewCells cells =
     E.column
         [ E.width E.fill
         , EB.color <| E.rgb255 100 100 154
         ]
     <|
-        List.map viewCell (Array.toList cells)
+        List.map viewCell (Dict.values cells)
 
 
 viewCell : Cell -> Element FrontendMsg
