@@ -3,14 +3,16 @@ module Types exposing (..)
 import Array exposing (Array)
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
+import Color exposing (Color)
+import Dict exposing (Dict)
 import Lamdera exposing (ClientId, SessionId)
 import Url exposing (Url)
 
 
 type alias FrontendModel =
     { key : Key -- TODO: what's key for??
-    , cells : Array Cell
-    , liveUsers : List LiveUser
+    , cells : Dict CellIndex Cell
+    , liveUsers : Dict ( SessionId, ClientId ) LiveUser
     }
 
 
@@ -23,8 +25,8 @@ type alias LiveUser =
 
 
 type alias BackendModel =
-    { cells : List Cell
-    , liveUsers : List LiveUser
+    { cells : Dict CellIndex Cell
+    , liveUsers : Dict ( SessionId, ClientId ) LiveUser
     }
 
 
@@ -41,20 +43,19 @@ type FrontendMsg
     = UrlClicked UrlRequest
     | UrlChanged Url
     | CellTextChanged String CellIndex
+    | ClickedCreateCell
 
 
 type ToBackend
-    = SubmitNewCell Cell
+    = SubmitNewCell CellIndex Cell
     | FetchHistory
 
 
 type BackendMsg
-    = NoOpBackendMsg
-    | ClientConnected SessionId ClientId -- TODO: we are not fetching those in the room at the time of connecting!!
+    = ClientConnected SessionId ClientId -- TODO: we are not fetching those in the room at the time of connecting!!
     | ClientDisconnected SessionId ClientId -- TODO: ^^ how do we write unit tests for this? Does elm-test work?
 
 
 type ToFrontend
-    = PushCellsState (List Cell)
-    | BroadcastUserJoined LiveUser
-    | BroadcastUserLeft LiveUser
+    = PushCellsState (Dict CellIndex Cell)
+    | PushCurrentLiveUsers (Dict ( SessionId, ClientId ) LiveUser)
