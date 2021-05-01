@@ -84,8 +84,12 @@ updateFromFrontend sessionId clientId msg model =
                 ]
             )
 
-        FetchHistory ->
-            ( model, Cmd.none )
+        PostCellState cellDict ->
+            ( { model | cells = cellDict }
+            , Cmd.batch
+                [ Lamdera.broadcast (PushCellsState cellDict)
+                ]
+            )
 
 
 subscriptions _ =
