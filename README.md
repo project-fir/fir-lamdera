@@ -1,4 +1,4 @@
-## Fir Prototype
+## Fir - Towards a distributed, human-in-loop compiler
 
 Check out the [demo](https://fir-lamdera.lamdera.app/)
 
