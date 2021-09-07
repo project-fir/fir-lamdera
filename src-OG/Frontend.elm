@@ -1,4 +1,4 @@
-module Frontend exposing (..)
+module ...src-OG.Frontend exposing (..)
 
 import Array exposing (Array)
 import Browser exposing (UrlRequest(..))
@@ -11,7 +11,7 @@ import Element.Input as EI exposing (..)
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Lamdera exposing (..)
-import Types exposing (BackendMsg(..), Cell, CellIndex, FrontendModel, FrontendMsg(..), LiveUser, ToBackend(..), ToFrontend(..))
+import ...src-OG.Types exposing (BackendMsg(..), Cell, CellIndex, FrontendModel, FrontendMsg(..), LiveUser, ToBackend(..), ToFrontend(..))
 import Url
 
 

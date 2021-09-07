@@ -1,0 +1,9 @@
+# This file is intended to configure local elastic search via docker-compose
+
+# This section was extracted manually from the default yml file provided in the vanilla Docker image.
+cluster.name: "docker-cluster"
+network.host: 0.0.0.0
+
+# This field was added to override the "production check" that there is more than one node!
+# source: https://stackoverflow.com/questions/59350069/elasticsearch-start-up-error-the-default-discovery-settings-are-unsuitable-for
+discovery.type: single-node

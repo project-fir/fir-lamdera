@@ -1,20 +1,58 @@
 module ElasticSearch exposing
-    ( Query, SearchRequest, searchRequest
-    , Value, date, float, int, string
-    , gt, gte, gtn, lt, lte, ltn, gtDate, gteDate, ltDate, lteDate
-    , range, term, type_
-    , bool, must, mustNot, should, filter
+    ( Query
+    , SearchRequest
+    , Value
+    , asc
+    , bool
     , boost
-    , sortBy, asc, desc
-    , encodeQuery, encodeSearchRequest
-    -- sort
-    -- params
-    -- leaf queries
-    -- value types
-    -- encode
-    -- cmp operators
-    -- compound queries
+    , date
+    , desc
+    , encodeQuery
+    ,  encodeSearchRequest
+       -- sort
+       -- params
+       -- leaf queries
+       -- value types
+       -- encode
+       -- cmp operators
+       -- compound queries
+
+    , filter
+    , float
+    , gt
+    , gtDate
+    , gte
+    , gteDate
+    , gtn
+    , int
+    , lt
+    , ltDate
+    , lte
+    , lteDate
+    , ltn
+    , must
+    , mustNot
+    , range
+    , searchRequest
+    , should
+    , sortBy
+    , string
+    , term
+    , type_
     )
+
+import Json.Encode as JE
+import Time.Date as Date exposing (Date)
+
+
+{-| Note: I found this library here: <https://github.com/orus-io/elm-elasticsearch>
+
+It appears unmaintained, and never made its way into an actual elm package. Searching for "elastic" there led me to this repo:
+<https://github.com/allo-media/elm-es-simple-query-string>
+^ fun stuff, but I think the less polished repo is closer to what I want, I could be wrong though.
+
+-}
+
 
 {-| Easily generate typesafe elasticsearch queries
 
@@ -61,11 +99,6 @@ These operators are to be used with the range query
 @docs encodeQuery, encodeSearchRequest
 
 -}
-
-import Json.Encode as JE
-import Time.Date as Date exposing (Date)
-
-
 type alias AttrName =
     String
 
