@@ -11,7 +11,7 @@ import Lamdera
 import Request
 import Shared
 import Task
-import Types exposing (FrontendModel, FrontendMsg(..), ToFrontend(..))
+import Types exposing (BackendMsg(..), FrontendModel, FrontendMsg(..), ToFrontend(..))
 import Url exposing (Url)
 import View
 
@@ -133,6 +133,9 @@ updateFromBackend msg model =
 
         PageMsg pageMsg ->
             update (Page pageMsg) model
+
+        NoOpToFrontend ->
+            ( model, Cmd.none )
 
 
 

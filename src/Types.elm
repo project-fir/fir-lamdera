@@ -30,6 +30,7 @@ type FrontendMsg
     | ClickedLink Browser.UrlRequest
     | Shared Shared.Msg
     | Page Pages.Msg
+    | Noop
 
 
 type alias BackendModel =
@@ -47,10 +48,11 @@ type alias ToBackend =
 type BackendMsg
     = CheckSession SessionId ClientId
     | RenewSession UserId SessionId ClientId Time.Posix
+    | NoOpBackendMsg
     | Tick Time.Posix
 
 
 type ToFrontend
     = ActiveSession User
     | PageMsg Pages.Msg
-    | Noop
+    | NoOpToFrontend

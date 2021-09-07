@@ -18,7 +18,6 @@ import Pages.Login
 import Pages.Profile.Username_
 import Pages.Register
 import Pages.Settings
-import Pages.Study
 import Task exposing (Task)
 import Time
 import Time.Extra as Time
@@ -80,6 +79,9 @@ update msg model =
 
         Tick time ->
             ( { model | now = time }, Cmd.none )
+
+        NoOpBackendMsg ->
+            ( model, Cmd.none )
 
 
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )

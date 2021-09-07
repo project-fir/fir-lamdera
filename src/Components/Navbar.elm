@@ -24,7 +24,6 @@ view options =
                             [ List.map (viewLink options.currentRoute) <|
                                 [ ( "Home", Route.Home_ )
                                 , ( "Settings", Route.Settings )
-                                , ( "Study", Route.Study )
                                 , ( "Catalog", Route.Catalog )
                                 ]
                             , [ li [ class "nav-item" ]
