@@ -4,8 +4,8 @@ services:
   elastic_search:
     container_name: "elastic-search"
     image: elasticsearch:7.14.1
-    # volumes:
-    #   - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    volumes:
+      - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
       - 9200:9200
       # Note: elastic search uses port 9300 for intra/meta communication, like elections etc. It's a custom binary protocol.. wonder if it could be used to extract data for efficiently than HTTP
