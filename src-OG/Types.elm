@@ -1,4 +1,4 @@
-module Types exposing (..)
+module ...src-OG.Types exposing (..)
 
 import Array exposing (Array)
 import Browser exposing (UrlRequest)
