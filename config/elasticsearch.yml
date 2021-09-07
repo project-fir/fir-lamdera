@@ -1,0 +1,8 @@
+# This file is intended to be mounted to a container running elastic search
+cluster.name: "docker-cluster"
+network.host: 0.0.0.0
+
+# This is short-term thinking to get started. Source: https://stackoverflow.com/questions/60421343/elasticsearch-docker-container-in-non-prod-mode-to-eliminate-vm-max-map-count-26/60426167#60426167
+# This is to prevent a built-in "production check" that prevents ES from starting.
+discovery:
+  type: single-node

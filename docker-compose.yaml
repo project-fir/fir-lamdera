@@ -1,22 +1,24 @@
 version: "3.3"
 
 services:
-  dev:
-    ports:
-      - 8000:8000
-    container_name: fir-lamdera
-    image: fir-lamdera:dev
-    networks:
-      - fir-lamdera-network
-    stdin_open: true
-    tty: true
-    working_dir: /root/code
+  elastic_search:
+    container_name: "elastic-search"
+    image: elasticsearch:7.14.1
     volumes:
-      - ~/code/fir-lamdera:/root/code
-    command: lamdera live
+      - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      -9200:9200
+      # Note: elastic search uses port 9300 for intra/meta communication, like elections etc. It's a custom binary protocol.. wonder if it could be used to extract data for efficiently than HTTP
+    mem_limit: 4096m
+
+  dev_kit:
+    image: dev-kit:latest
+    volumes:
+      - .:/home/appuser/workspace
+    command: bash
 
 networks:
-  fir-lamdera-network:
+  fir-sandbox-network:
     driver: bridge
     ipam:
       driver: default

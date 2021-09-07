@@ -1,18 +1,38 @@
 module Backend exposing (..)
 
-import Color exposing (..)
-import Dict exposing (..)
-import Html
-import Lamdera exposing (ClientId, SessionId, broadcast, sendToFrontend)
-import Random exposing (Generator, generate)
-import Random.List as RL exposing (choose)
-import Types exposing (BackendModel, BackendMsg(..), Cell, LiveUser, ToBackend(..), ToFrontend(..))
+import Api.Card exposing (CardEnvelope, CardId, FlashCard, PromptFrequency(..), processGrade)
+import Api.Data exposing (Data(..))
+import Api.Profile exposing (Profile)
+import Api.User exposing (Email, User, UserFull, UserId)
+import Bridge exposing (ToBackend(..))
+import Debug
+import Dict
+import Dict.Extra as Dict
+import Duration exposing (Duration)
+import Gen.Msg
+import Lamdera exposing (..)
+import List.Extra as List
+import Pages.Catalog
+import Pages.Home_
+import Pages.Login
+import Pages.Profile.Username_
+import Pages.Register
+import Pages.Settings
+import Task exposing (Task)
+import Time
+import Time.Extra as Time
+import Types exposing (BackendModel, BackendMsg(..), FrontendMsg(..), ToFrontend(..))
 
 
 type alias Model =
     BackendModel
 
 
+ticMs =
+    1000
+
+
+app : { init : ( Model, Cmd BackendMsg ), update : BackendMsg -> Model -> ( Model, Cmd BackendMsg ), updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg ), subscriptions : Model -> Sub BackendMsg }
 app =
     Lamdera.backend
         { init = init
@@ -22,129 +42,163 @@ app =
         }
 
 
+subscriptions : Model -> Sub BackendMsg
+subscriptions model =
+    Sub.batch
+        [ onConnect CheckSession
+
+        -- Probably a useful pattern for things..
+        -- , Time.every ticMs Tick
+        ]
+
+
 init : ( Model, Cmd BackendMsg )
 init =
-    let
-        initModel =
-            BackendModel (Dict.insert 0 (Cell "") Dict.empty) Dict.empty
-    in
-    ( initModel
-    , Cmd.batch
-        [ Lamdera.broadcast <| PushCellsState initModel.cells
-        ]
+    ( { sessions = Dict.empty
+      , users = Dict.empty
+      , cards = Dict.empty
+      , now = Time.millisToPosix 0 -- Setting this to 0 here is a bit of a hack, but the server's init basically never runs after launch, so this'll do
+      }
+    , Cmd.none
     )
-
-
-parseColor : Maybe Color -> Color
-parseColor color =
-    case color of
-        Just c ->
-            c
-
-        Nothing ->
-            lightBrown
 
 
 update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
 update msg model =
     case msg of
-        ClientConnected sessionId clientId ->
-            let
-                updatedUsers =
-                    Dict.insert ( sessionId, clientId ) (LiveUser sessionId clientId) model.liveUsers
+        CheckSession sid cid ->
+            model
+                |> getSessionUser sid
+                |> Maybe.map (\user -> ( model, sendToFrontend cid (ActiveSession (Api.User.toUser user)) ))
+                |> Maybe.withDefault ( model, Cmd.none )
 
-                updatedModel =
-                    { model | liveUsers = updatedUsers }
-            in
-            ( updatedModel
-            , Cmd.batch
-                [ Lamdera.broadcast (PushCellsState updatedModel.cells)
-                , Lamdera.broadcast (PushCurrentLiveUsers updatedModel.liveUsers)
-                ]
+        RenewSession uid sid cid now ->
+            ( { model | sessions = model.sessions |> Dict.update sid (always (Just { userId = uid, expires = now |> Time.add Time.Day 30 Time.utc })) }
+            , Time.now |> Task.perform (always (CheckSession sid cid))
             )
 
-        ClientDisconnected sessionId clientId ->
-            let
-                updatedUsers =
-                    Dict.remove ( sessionId, clientId ) model.liveUsers
+        Tick time ->
+            ( { model | now = time }, Cmd.none )
 
-                updatedModel =
-                    { model | liveUsers = updatedUsers }
-            in
-            ( updatedModel, Cmd.batch [ Lamdera.broadcast (PushCurrentLiveUsers updatedModel.liveUsers) ] )
+        NoOpBackendMsg ->
+            ( model, Cmd.none )
 
 
 updateFromFrontend : SessionId -> ClientId -> ToBackend -> Model -> ( Model, Cmd BackendMsg )
 updateFromFrontend sessionId clientId msg model =
-    case msg of
-        SubmitNewCell ix ->
-            let
-                newCell =
-                    Cell ""
-
-                updatedModel =
-                    { model | cells = Dict.insert ix newCell model.cells }
-            in
-            ( updatedModel
-            , Cmd.batch
-                [ Lamdera.broadcast <| PushCellsState updatedModel.cells
-                ]
-            )
-
-        PostCellState cellDict ->
-            ( { model | cells = cellDict }
-            , Cmd.batch
-                [ Lamdera.broadcast (PushCellsState cellDict)
-                ]
-            )
-
-
-subscriptions _ =
-    Sub.batch
-        [ Lamdera.onConnect ClientConnected
-        , Lamdera.onDisconnect ClientDisconnected
-        ]
-
-
-colorGenerator : Generator ( Maybe Color, List Color )
-colorGenerator =
-    -- TODO: I'd like to return Generator Color (I'd settle for Generator (Maybe Color),
-    -- but having this List floating around feels weird to me)
     let
-        colors =
-            -- TODO: Custom palette; these colors are more "neon" than what I'm going for
-            [ red
-            , orange
-            , yellow
-            , green
-            , blue
-            , purple
-            , brown
-            , lightRed
-            , lightOrange
-            , lightYellow
-            , lightGreen
-            , lightBlue
-            , lightPurple
-            , lightBrown
-            , darkRed
-            , darkOrange
-            , darkYellow
-            , darkGreen
-            , darkBlue
-            , darkPurple
-            , darkBrown
-            , white
-            , lightGrey
-            , grey
-            , darkGrey
-            , lightCharcoal
-            , charcoal
-            , darkCharcoal
-            , black
-            , lightGray
-            , gray
-            , darkGray
-            ]
+        send v =
+            ( model, send_ v )
+
+        send_ v =
+            sendToFrontend clientId v
     in
-    RL.choose colors
+    case msg of
+        SignedOut user ->
+            ( { model | sessions = model.sessions |> Dict.remove sessionId }, Cmd.none )
+
+        ProfileGet_Profile__Username_ { username } ->
+            let
+                res =
+                    profileByUsername username model
+                        |> Maybe.map Success
+                        |> Maybe.withDefault (Failure [ "user not found" ])
+            in
+            send <| PageMsg (Gen.Msg.Profile__Username_ (Pages.Profile.Username_.GotProfile res))
+
+        UserAuthentication_Login { params } ->
+            let
+                ( response, cmd ) =
+                    model.users
+                        |> Dict.find (\k u -> u.email == params.email)
+                        |> Maybe.map
+                            (\( k, u ) ->
+                                if u.password == params.password then
+                                    ( Success (Api.User.toUser u), renewSession u.id sessionId clientId )
+
+                                else
+                                    ( Failure [ "email or password is invalid" ], Cmd.none )
+                            )
+                        |> Maybe.withDefault ( Failure [ "email or password is invalid" ], Cmd.none )
+            in
+            ( model, Cmd.batch [ send_ (PageMsg (Gen.Msg.Login (Pages.Login.GotUser response))), cmd ] )
+
+        UserRegistration_Register { params } ->
+            let
+                ( model_, cmd, res ) =
+                    if model.users |> Dict.any (\k u -> u.email == params.email) then
+                        ( model, Cmd.none, Failure [ "email address already taken" ] )
+
+                    else
+                        let
+                            user_ =
+                                { id = Dict.size model.users
+                                , email = params.email
+                                , username = params.username
+                                , bio = Nothing
+                                , image = "https://static.productionready.io/images/smiley-cyrus.jpg"
+                                , password = params.password
+                                }
+                        in
+                        ( { model | users = model.users |> Dict.insert user_.id user_ }
+                        , renewSession user_.id sessionId clientId
+                        , Success (Api.User.toUser user_)
+                        )
+            in
+            ( model_, Cmd.batch [ cmd, send_ (PageMsg (Gen.Msg.Register (Pages.Register.GotUser res))) ] )
+
+        UserUpdate_Settings { params } ->
+            let
+                ( model_, res ) =
+                    case model |> getSessionUser sessionId of
+                        Just user ->
+                            let
+                                user_ =
+                                    { user
+                                        | username = params.username
+
+                                        -- , email = params.email
+                                        , password = params.password |> Maybe.withDefault user.password
+                                        , image = params.image
+                                        , bio = Just params.bio
+                                    }
+                            in
+                            ( model |> updateUser user_, Success (Api.User.toUser user_) )
+
+                        Nothing ->
+                            ( model, Failure [ "you do not have permission for this user" ] )
+            in
+            ( model_, send_ (PageMsg (Gen.Msg.Settings (Pages.Settings.GotUser res))) )
+
+
+getSessionUser : SessionId -> Model -> Maybe UserFull
+getSessionUser sid model =
+    model.sessions
+        |> Dict.get sid
+        |> Maybe.andThen (\session -> model.users |> Dict.get session.userId)
+
+
+renewSession email sid cid =
+    Time.now |> Task.perform (RenewSession email sid cid)
+
+
+updateUser : UserFull -> Model -> Model
+updateUser user model =
+    { model | users = model.users |> Dict.update user.id (Maybe.map (always user)) }
+
+
+profileByUsername username model =
+    model.users |> Dict.find (\k u -> u.username == username) |> Maybe.map (Tuple.second >> Api.User.toProfile)
+
+
+profileByEmail email model =
+    model.users |> Dict.find (\k u -> u.email == email) |> Maybe.map (Tuple.second >> Api.User.toProfile)
+
+
+
+-- utiliity funcs
+
+
+isCardScheduled : Time.Posix -> CardEnvelope -> Bool
+isCardScheduled now cardEnv =
+    Time.posixToMillis now >= Time.posixToMillis cardEnv.nextPromptSchedFor

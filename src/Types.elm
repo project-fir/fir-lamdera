@@ -1,61 +1,58 @@
 module Types exposing (..)
 
-import Array exposing (Array)
-import Browser exposing (UrlRequest)
+import Api.Card exposing (CardEnvelope, CardId, FlashCard)
+import Api.User exposing (User, UserFull, UserId)
+import Bridge
+import Browser
 import Browser.Navigation exposing (Key)
-import Color exposing (Color)
 import Dict exposing (Dict)
+import Gen.Pages as Pages
 import Lamdera exposing (ClientId, SessionId)
+import Shared
+import Time
 import Url exposing (Url)
 
 
 type alias FrontendModel =
-    { key : Key -- TODO: what's key for??
-    , cells : Dict CellIndex Cell
-    , liveUsers : Dict ( SessionId, ClientId ) LiveUser
+    { url : Url
+    , key : Key
+    , shared : Shared.Model
+    , page : Pages.Model
     }
 
 
-type alias BackendModel =
-    { cells : Dict CellIndex Cell
-    , liveUsers : Dict ( SessionId, ClientId ) LiveUser
-    }
-
-
-type alias LiveUser =
-    -- a "live user" is a user that is actively working, kinda like google docs does with the color icons
-    -- TODO: Q for #lamdera?? Would auth stuff go here? How do we avoid broadcasting private info to clients?
-    { sessionId : SessionId
-    , clientId : ClientId
-    }
-
-
-type alias Cell =
-    { text : String
-    }
-
-
-type alias CellIndex =
-    Int
+type alias Session =
+    { userId : Int, expires : Time.Posix }
 
 
 type FrontendMsg
-    = UrlClicked UrlRequest
-    | UrlChanged Url
-    | CellTextChanged String CellIndex
-    | ClickedCreateCell
+    = ChangedUrl Url
+    | ClickedLink Browser.UrlRequest
+    | Shared Shared.Msg
+    | Page Pages.Msg
+    | Noop
 
 
-type ToBackend
-    = SubmitNewCell CellIndex
-    | PostCellState (Dict CellIndex Cell)
+type alias BackendModel =
+    { sessions : Dict SessionId Session
+    , users : Dict Int UserFull
+    , cards : Dict CardId CardEnvelope
+    , now : Time.Posix
+    }
+
+
+type alias ToBackend =
+    Bridge.ToBackend
 
 
 type BackendMsg
-    = ClientConnected SessionId ClientId -- TODO: we are not fetching those in the room at the time of connecting!!
-    | ClientDisconnected SessionId ClientId -- TODO: ^^ how do we write unit tests for this? Does elm-test work?
+    = CheckSession SessionId ClientId
+    | RenewSession UserId SessionId ClientId Time.Posix
+    | NoOpBackendMsg
+    | Tick Time.Posix
 
 
 type ToFrontend
-    = PushCellsState (Dict CellIndex Cell)
-    | PushCurrentLiveUsers (Dict ( SessionId, ClientId ) LiveUser)
+    = ActiveSession User
+    | PageMsg Pages.Msg
+    | NoOpToFrontend
