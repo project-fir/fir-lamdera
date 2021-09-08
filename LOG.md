@@ -34,5 +34,5 @@
             * API support ElasticQuery DSL, which has (limited) Elm support.
             * In additional to being a quasi-datastore, ES also has search features. If the data-viz stuff doesn't work out, there still might be fun things to experiment with.
         - FaunaDB also looks interesting, but it's too much of a leap relative to my current skillset. I want to stay focused on the Lamdera aspect, if I'm successful Fauna deserves a closer look for sure.
-        - DataWarehousing products like BigQuery and Snowflake have lots of setup, and are higher latency. Punting on this, though needs more consideration.
+        - DataWarehousing products like BigQuery and Snowflake have lots of setup, and are higher latency. Punting this, though needs more consideration.
     * I'm going with Elastic Search for now, with the expectation of running into HTTP-related latency issues.
