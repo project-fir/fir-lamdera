@@ -6,15 +6,29 @@ services:
     image: elasticsearch:7.14.1
     volumes:
       - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    networks:
+     - fir-sandbox-network
     ports:
       - 9200:9200
       # Note: elastic search uses port 9300 for intra/meta communication, like elections etc. It's a custom binary protocol.. wonder if it could be used to extract data for efficiently than HTTP
     mem_limit: 4096m
 
+  twitch_vod_pipeline:
+    image: dev-kit:latest
+    volumes:
+      - .:/home/appuser/workspace
+      - ~/data:/home/appuser/data
+    networks:
+     - fir-sandbox-network
+    command: python ./shell-scripts/twitch_vod_pipeline.py
+
   dev_kit:
     image: dev-kit:latest
     volumes:
       - .:/home/appuser/workspace
+      - ~/data:/home/appuser/data
+    networks:
+     - fir-sandbox-network
     command: bash
 
 networks:
