@@ -25,7 +25,7 @@
             * provide type safety "wrapped around" the data store - need to jam on this one more.
         - cons:
             * We are intentionally crossing a `semantic boundary`. Reducing such boundaries is a large motivation for Lamdera in the first place. I'm setting myself up for some upstream-swimming.
-    * Two options come to mind:
+    * Options that come to mind:
         - MongoDB
             * Very fast, BSON basically is just JSON
             * Quickly scouring the web, I see no MongoDB protocol implemented in Elm.
@@ -33,4 +33,6 @@
             * HTTP API out of the box
             * API support ElasticQuery DSL, which has (limited) Elm support.
             * In additional to being a quasi-datastore, ES also has search features. If the data-viz stuff doesn't work out, there still might be fun things to experiment with.
-        - ^ so, I'm going with Elastic Search for now.
+        - FaunaDB also looks interesting, but it's too much of a leap relative to my current skillset. I want to stay focused on the Lamdera aspect, if I'm successful Fauna deserves a closer look for sure.
+        - DataWarehousing products like BigQuery and Snowflake have lots of setup, and are higher latency. Punting on this, though needs more consideration.
+    * I'm going with Elastic Search for now, with the expectation of running into HTTP-related latency issues.
