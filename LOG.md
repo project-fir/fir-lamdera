@@ -21,8 +21,8 @@
    and want to start exploring what it'd be like to incorporate Lamdera into an existing ecosystem. My thoughts atm:
     * While "pure lamdera" is my happy place, it's a bit far from most company's realities. Could a datastore + Lamdera hybrid approach help convince others this paradigm isn't crazy?
         - Pros:
-            * might help keep Lamdera cost down as I approach "medium data", pro looks like it could get pricey for what I want to achieve Hobbyst tier stops at 5MB (tho I think that might be negotiable)
-            * provide type safety "wrapped around" the data store.
+            * might help keep Lamdera cost down as I approach "medium data", pro looks like it could get pricey for what I want to achieve. Also hobbyst tier stops at 5MB (tho I think that might be negotiable)
+            * provide type safety "wrapped around" the data store - need to jam on this one more.
         - cons:
             * We are intentionally crossing a `semantic boundary`. Reducing such boundaries is a large motivation for Lamdera in the first place. I'm setting myself up for some upstream-swimming.
     * Two options come to mind:
