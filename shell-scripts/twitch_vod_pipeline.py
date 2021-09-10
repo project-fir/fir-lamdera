@@ -9,6 +9,17 @@ from pydantic import BaseModel
 from urllib.parse import urljoin
 
 
+"""
+Goal here is to populate ES with BS data that is:
+ * simple to fetch more of
+ * isn't too messy but not too clean either
+ * fun
+
+Also, experimenting with style. I'm using closures in Python where I'd use classes / methods in the past
+Hypothesis: Python is cool if paired with type-hints & only using classes for nouns
+"""
+
+
 class ChatLog(BaseModel):
     """
 Example of one record, obtained with this (saved locally, JSON format): https://www.youtube.com/watch?v=6g9erT2-tGE
@@ -126,7 +137,11 @@ def publish_to_es(validated_data: t.List[ChatLog], es_host: str, index="twitch_v
 
     def post_data():
         # TODO: Not sure what the limit is for payload size (or if there is one), batching logic probably belongs here..
-        payload = '\n'.join(d.json() for d in validated_data[0:2]) + '\n'
+        index_instructions = ['{"index": {"_index": "twitch_vod_logs"}}' for _ in range(0, len(validated_data))]
+        zipped = [j for i in zip(index_instructions, validated_data) for j in i]
+        print(zipped)
+        payload = '\n'.join(zipped)
+
         print("payload:")
         print(payload)
 
@@ -160,6 +175,7 @@ if __name__ == "__main__":
         is_valid, validated_data = validate_file(path=path)
 
     if not DRY_RUN:
+        print(F"publishing to {ES_HOST}")
         publish_to_es(validated_data=validated_data, es_host=ES_HOST)
     else:
         print("This is a dry run, not actually doing anything.")

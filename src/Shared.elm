@@ -86,10 +86,10 @@ view :
 view req { page, toMsg } model =
     { title =
         if String.isEmpty page.title then
-            "Hippo"
+            "Fir"
 
         else
-            page.title ++ " | Hippo"
+            page.title ++ " | Fir"
     , body =
         css
             ++ [ div [ class "layout" ]
