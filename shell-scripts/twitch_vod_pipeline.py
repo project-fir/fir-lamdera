@@ -13,9 +13,6 @@ Goal here is to populate ES with BS data that is:
  * simple to fetch more of
  * isn't too messy but not too clean either
  * fun
-
-Also, experimenting with style. I'm using closures in Python where I'd use classes / methods in the past
-Hypothesis: Python is cool if paired with type-hints & only using classes for nouns
 """
 
 
