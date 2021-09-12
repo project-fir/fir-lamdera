@@ -1,5 +1,5 @@
 ### Motivation:
-I really enjoy coding in Lamdera, and want to explore the idea of building a lightweight open-source exploratory data analysis (EDA henceforth) tool. While I haven't pushed Lamdera to the limits (yet), this will require some type of scale. Mario Rogic, the creator of Lamdera, said on this [elm radio podcast](https://open.spotify.com/episode/2NxIl7N5ZlD0oZlCxQXSOF?si=65BpZZq2Sc6yKAXsZSECzA&dl_branch=1) that Lamdera can likely scale vertically to meet the needs of many small businesses. I agree with this for user-facing products, but for internal tools built on top of data warehouses, I don't think Lamdera's pricing structure will workout.
+I really enjoy coding in Lamdera, and want to explore the idea of building a lightweight open-source exploratory data analysis (EDA henceforth) tool. While I haven't pushed Lamdera to the limits (yet), this will require some type of scale. Mario Rogic, the creator of Lamdera, said on this [elm radio podcast](https://open.spotify.com/episode/2NxIl7N5ZlD0oZlCxQXSOF?si=65BpZZq2Sc6yKAXsZSECzA&dl_branch=1) that Lamdera can likely scale vertically to meet the needs of many small businesses. I agree with this for user-facing products, but for internal tools built on top of data warehouses, I don't think Lamdera's pricing structure will work out.
 
 
 #### A good EDA tool should:
