@@ -1,12 +1,27 @@
 import os
 import requests
-import pydantic
 
 import json
 import typing as t
 from pathlib import Path
 from pydantic import BaseModel
 from urllib.parse import urljoin
+
+
+"""
+Goal here is to populate ES with BS data that is:
+ * simple to fetch more of
+ * isn't too messy but not too clean either
+ * fun
+"""
+
+
+class _Config(BaseModel):
+    es_cloud_hostname: str
+    api_key: str
+    destination_engine: str
+    # max chunk_size is 100, there are also data size limitations but not applicable to us here
+    chunk_size: int = 100
 
 
 class ChatLog(BaseModel):
@@ -72,7 +87,7 @@ Example of one record, obtained with this (saved locally, JSON format): https://
     commenter_created_at: str
     commenter_updated_at: str
     message_body: str
-    
+
     message_is_action: bool
     message_user_badges: t.Optional[t.List[t.Dict[str, str]]]
     # omitted fields (not sure what they do / if I'd have use for them)
@@ -84,10 +99,14 @@ Example of one record, obtained with this (saved locally, JSON format): https://
     # message_fragments: t.Optional[t.List[t.Dict[str, str]]]
 
 
-def validate_file(path: str) -> t.Tuple[bool, t.Optional[t.List[ChatLog]]]: 
+def chunker(seq, size):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
+
+def validate_file(path: str) -> t.Tuple[bool, t.Optional[t.List[ChatLog]]]:
     """
     Given a file pointing to twitch_vod logs, validate each record against Pydantic validation
-    
+
     Returns:
         If every record in the file is valid, we return (True, <validated_data>)
 
@@ -98,68 +117,89 @@ def validate_file(path: str) -> t.Tuple[bool, t.Optional[t.List[ChatLog]]]:
     data: t.List[ChatLog] = []
 
     try:
-        with open(path, 'r') as fp:
+        with open(path, 'r',  encoding="utf8") as fp:
             raw = json.load(fp)
 
         for blob in raw:
             log = ChatLog(**blob)
             data.append(log)
     except Exception as ex:
-        print(blob)
         print(ex)
         return False, None
-    
+
     return True, data
 
 
-def publish_to_es(validated_data: t.List[ChatLog], es_host: str, index="twitch_vod_logs"):
+def publish_to_es(validated_data: t.List[ChatLog], config: _Config):
     """
     Given validated chat logs, create an index for them to go in, and place
 
 
     Note: feeling lazy, going with dynamic mappings, might be worth looking into static mappings
+
+    Important limitations:
+      Documents are sent via an array and are independently accepted and indexed, or rejected.
+      A 200 response and an empty errors array denotes a successful index.
+      If no id is provided, a unique id will be generated.
+      A document is created each time content is received without an id - beware duplicates!
+      A document will be updated - not created - if its id already exists within a document.
+      If the Engine has not seen the field before, then it will create a new field of type text.
+      Fields cannot be named: external_id, engine_id, highlight, or, and, not, any, all, none.
+      There is a 100 document per request limit; each document must be less than 100kb.
+      An indexing request may not exceed 10mb.
+
+    Source: https://www.elastic.co/guide/en/app-search/7.14/documents.html
     """
-    def create_index():
-        url = urljoin(es_host, index)
-        r = requests.put(url)
-        print(r.text)
+    endpoint = f"/api/as/v1/engines/{config.destination_engine}/documents"
+    url = urljoin(config.es_cloud_hostname, endpoint)
 
-    def post_data():
-        # TODO: Not sure what the limit is for payload size (or if there is one), batching logic probably belongs here..
-        payload = '\n'.join(d.json() for d in validated_data[0:2]) + '\n'
-        print("payload:")
-        print(payload)
+    for i, chunk in enumerate(chunker(validated_data, config.chunk_size)):
+        print(
+            f"processing chunk {i} of {len(validated_data) / config.chunk_size}...")
+        payload = [c.dict() for c in chunk]
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {config.api_key}",
+        }
 
-        url = urljoin(es_host, "_bulk")
         r = requests.post(
-                url,
-                data = payload,
-                headers = {"Content-Type": "application/x-ndjson"},
-            )
-        print("Response:")
-        print(r.text)
+            url=url,
+            json=payload,
+            headers=headers,
+        )
 
-    create_index()
-    post_data()
+    print("Response:")
+    print(r.text)
 
 
 if __name__ == "__main__":
     DATA_DIR: Path = Path(Path.home(), "data/twitch_vod_scraper")
-    ES_HOST = "http://elastic-search:9200"  # container name
+    # ES_HOST = "http://elastic-search:9200"  # container name, depcrecated - experimenting with hosted solution.
+    API_KEY = os.getenv("ELASTIC_CLOUD_API_KEY")
+    ES_HOST = "https://fir-sandbox.ent.eastus2.azure.elastic-cloud.com"
+    ENGINE_NAME = "fir-search-engine"
     DRY_RUN = False
 
+    CONFIG = _Config(
+        es_cloud_hostname=ES_HOST,
+        api_key=API_KEY,
+        destination_engine=ENGINE_NAME,
+    )
+
     print(f"""
-    Starting Twitch VOD pipeline into Elastic Search:
-        source: valid files in {DATA_DIR}
-        dest: Elastic Search index at {ES_HOST}
-    """)
+  Starting Twitch VOD pipeline into Elastic Search:
+      source: valid files in {DATA_DIR}
+      dest: Elastic Search index at {ES_HOST}
+  """)
 
     json_files = [f for f in os.listdir(DATA_DIR)]
     for f in json_files:
         path = Path(DATA_DIR, f)
         is_valid, validated_data = validate_file(path=path)
 
-    if not DRY_RUN:
-        publish_to_es(validated_data=validated_data, es_host=ES_HOST)
-    else:
-        print("This is a dry run, not actually doing anything.")
+        if not DRY_RUN:
+            print(F"publishing to {ES_HOST}")
+            publish_to_es(validated_data=validated_data, config=CONFIG)
+        else:
+            print("This is a dry run, not actually doing anything.")
+            print(f"api_key={API_KEY}")
