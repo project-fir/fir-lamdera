@@ -14,8 +14,8 @@ I really enjoy coding in Lamdera, and want to explore the idea of building a lig
 #### Hypothesis: Analysts want type systems & no runtime errors, but don't realize it's already possible
 Engineers have been engineering their way to better tooling, but this has left analyst tooling behind in the dust. Can a Lamdera app "hug" a data warehouse to provide a delightful data exploration platform?
 
-Reviewing the Elm architecture:
-For more details see [the Elm docs](https://guide.elm-lang.org/architecture/), but the gist is:
+#### Architecture:
+Elm  - for more details see [the Elm docs](https://guide.elm-lang.org/architecture/), but the gist is:
  * you define `Model` and `Msg` types. `Model` describes the state needed to run your app, `Msg` describes all the things that can happen in your app
  * Then, you must supply four things:
     * `init` your model
@@ -23,8 +23,7 @@ For more details see [the Elm docs](https://guide.elm-lang.org/architecture/), b
     * `subscribe` to msgs from others / system (setting an event to fire ever X seconds is a simple example)
     * render your model's `view`, outputs HTML for the browser to render
 
-Lamdera:
-For more details see [the lamdera docs](https://dashboard.lamdera.app/docs), but the gist is:
+Lamdera - for more details see [the lamdera docs](https://dashboard.lamdera.app/docs), but the gist is:
  * generalizes `Model` to `FrontendModel` annd `BackendModel`, each with an `init` function
  * generalizes `Msg` to `Frontengdsg` and `BackendMsg`
  * provides bridges `toBackend` and `toFrontend`
@@ -36,7 +35,7 @@ Fir??:
  * metadata, instructions for aggregations, slices, regressions, etc managed by Lamdera
 
 
-#### Prctical prototyping
+#### Practical prototyping
 After some thinking and reading, I believe Elastic Search Cloud is the least-gluey practical option for protoyping this architecture. I've already set up a new instance, and got some toy data indexed.
 
 Here's a diagram of the architecture I'm pursuing first. If you're new to Lamdera, note that the backend and frontend are a single code-repo, working together glueless-ly.
