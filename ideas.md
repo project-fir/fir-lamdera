@@ -38,10 +38,10 @@ Fir??:
 #### Practical prototyping
 After some thinking and reading, I believe Elastic Search Cloud is the least-gluey practical option for protoyping this architecture. I've already set up a new instance, and got some toy data indexed.
 
-Here's a diagram of the architecture I'm pursuing first. If you're new to Lamdera, note that the backend and frontend are a single code-repo, working together glueless-ly.
+Here's a diagram of the architecture I'm pursuing first.
 ![schema fields](./assets/fig2.png)
 
 
-#### Last idea:
+#### Another idea:
 An example of the post-schema change notification panel. When adding new types of data to an index, elastic cloud notifies you to confirm the types (it presents it's best guess). This is pretty cool, I like this approach better than [Great Expectations](https://greatexpectations.io/). Is there a possible UI that can give us an "evergreen-ed" version of this?
 ![schema fields](./assets/fig1.png)
