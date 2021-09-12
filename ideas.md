@@ -1,18 +1,18 @@
 ### Motivation:
-I really enjoy coding in Lamdera, and want to explore the idea of a simple open-source exploratory data analysis (EDA henceforth) tool. While I haven't pushed Lamdera to the limits (yet), this will require some type of scale. Mario Rogic, the creator of Lamdera said on a podcast that Lamdera can likely scale vertically to meet the needs of many small businesses. I agree with this for user-facing products, but for internal tools built on top of data warehouses, I don't think Lamdera's pricing structure will workout.
+I really enjoy coding in Lamdera, and want to explore the idea of building a lightweight open-source exploratory data analysis (EDA henceforth) tool. While I haven't pushed Lamdera to the limits (yet), this will require some type of scale. Mario Rogic, the creator of Lamdera, said on this [elm radio podcast](https://open.spotify.com/episode/2NxIl7N5ZlD0oZlCxQXSOF?si=65BpZZq2Sc6yKAXsZSECzA&dl_branch=1) that Lamdera can likely scale vertically to meet the needs of many small businesses. I agree with this for user-facing products, but for internal tools built on top of data warehouses, I don't think Lamdera's pricing structure will workout.
 
 
 #### A good EDA tool should:
- * be convenient, fast. "fast" here means both fast aggregations and responsive UIs
- * have access to a wide variety of metrics, and Analyst shouldn't be scared to perform cross-domain `join`s
- * be cheap, tools like Looker / Tableau are prohibitively expensive!means glue code, which means support burden
- * re-inforce good habits through sticky behavior - engineers go out of their way to commit code to Git because it would be insane not to
+ * be convenient and fast. "fast" here means both fast aggregations and responsive UIs
+ * have access to a wide variety of metrics. Analyst shouldn't be scared to perform cross-domain `join`s
+ * be cheap, tools like Looker / Tableau are prohibitively expensive!
+ * re-inforce good habits through sticky behavior - engineers go out of their way to commit code to Git because it would be insane not to, this is where Lamdera's `evergreen` feature might come in handy.
  * have ingress-glue only. glue code is inevitable, but should be pushed to the data-ingestion process as much as possible. The day-to-day Analyst workflow should be glue-free & engineer-free
- * be analyst-hackable - engineers are expensive, and in practice getting them to work on your internal-facing needs is unlikely until the company is well-established. Additionally, this means crossing semantic boundaries, which means support 
+ * be analyst-hackable - engineers are expensive, and in practice getting them to work on your internal-facing needs is unlikely until the company is well-established. Additionally, this means crossing semantic boundaries, which means support. There is already precendent for this: Microsoft Excel
 
 
-#### Hypothesis: Analysts want type systems and no runtime errors.
-Can a Lamdera app "hug" a data warehouse to provide a delightful data exploration platform? 
+#### Hypothesis: Analysts want type systems & no runtime errors, but don't realize it's already possible
+Engineers have been engineering their way to better tooling, but this has left analyst tooling behind in the dust. Can a Lamdera app "hug" a data warehouse to provide a delightful data exploration platform?
 
 Reviewing the Elm architecture:
 For more details see [the Elm docs](https://guide.elm-lang.org/architecture/), but the gist is:
@@ -31,13 +31,18 @@ For more details see [the lamdera docs](https://dashboard.lamdera.app/docs), but
  * evergreen migrations enforce type-safety across schema changes - this can get a bit complicated, but I think there's potential here to build some really slick code-free tooling
 
 
+Fir??:
+ * allows for raw data to live outside of lamdera?
+ * metadata, instructions for aggregations, slices, regressions, etc managed by Lamdera
+
+
 #### Prctical prototyping
+After some thinking and reading, I believe Elastic Search Cloud is the least-gluey practical option for protoyping this architecture. I've already set up a new instance, and got some toy data indexed.
 
-This is interesting, I find this key when considering the practicalities of a data-driven organization. Software engineering technical skill is hard to come by, and you'll have to do some finagling to get them to support your project. Here, the type checking can be in the hands of the analyst. The post-upload notifactions.
-
-The post-upload notifactions.
+Here's a diagram of the architecture I'm pursuing first. If you're new to Lamdera, note that the backend and frontend are a single code-repo, working together glueless-ly.
 ![schema fields](./assets/fig2.png)
 
 
-
+#### Last idea:
+An example of the post-schema change notification panel. When adding new types of data to an index, elastic cloud notifies you to confirm the types (it presents it's best guess). This is pretty cool, I like this approach better than [Great Expectations](https://greatexpectations.io/). Is there a possible UI that can give us an "evergreen-ed" version of this?
 ![schema fields](./assets/fig1.png)
