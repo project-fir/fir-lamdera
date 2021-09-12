@@ -1,6 +1,5 @@
 import os
 import requests
-import pydantic
 
 import json
 import typing as t
@@ -83,7 +82,7 @@ Example of one record, obtained with this (saved locally, JSON format): https://
     commenter_created_at: str
     commenter_updated_at: str
     message_body: str
-    
+
     message_is_action: bool
     message_user_badges: t.Optional[t.List[t.Dict[str, str]]]
     # omitted fields (not sure what they do / if I'd have use for them)
@@ -95,10 +94,10 @@ Example of one record, obtained with this (saved locally, JSON format): https://
     # message_fragments: t.Optional[t.List[t.Dict[str, str]]]
 
 
-def validate_file(path: str) -> t.Tuple[bool, t.Optional[t.List[ChatLog]]]: 
+def validate_file(path: str) -> t.Tuple[bool, t.Optional[t.List[ChatLog]]]:
     """
     Given a file pointing to twitch_vod logs, validate each record against Pydantic validation
-    
+
     Returns:
         If every record in the file is valid, we return (True, <validated_data>)
 
@@ -109,21 +108,20 @@ def validate_file(path: str) -> t.Tuple[bool, t.Optional[t.List[ChatLog]]]:
     data: t.List[ChatLog] = []
 
     try:
-        with open(path, 'r') as fp:
+        with open(path, 'r',  encoding="utf8") as fp:
             raw = json.load(fp)
 
         for blob in raw:
             log = ChatLog(**blob)
             data.append(log)
     except Exception as ex:
-        print(blob)
         print(ex)
         return False, None
-    
+
     return True, data
 
 
-def publish_to_es(validated_data: t.List[ChatLog], es_host: str, index="twitch_vod_logs"):
+def publish_to_es(validated_data: t.List[ChatLog], es_host: str, api_key: str, index="twitch_vod_logs"):
     """
     Given validated chat logs, create an index for them to go in, and place
 
@@ -137,8 +135,17 @@ def publish_to_es(validated_data: t.List[ChatLog], es_host: str, index="twitch_v
 
     def post_data():
         # TODO: Not sure what the limit is for payload size (or if there is one), batching logic probably belongs here..
-        index_instructions = ['{"index": {"_index": "twitch_vod_logs"}}' for _ in range(0, len(validated_data))]
-        zipped = [j for i in zip(index_instructions, validated_data) for j in i]
+        index_industruction: t.Dict = {
+            "index": {
+                "_index": index,
+            },
+        }
+
+        index_instructions = [json.dumps(index_industruction)
+                              for _ in range(0, len(validated_data))]
+        zipped = [j for i in zip(
+            index_instructions, validated_data) for j in i]
+
         print(zipped)
         payload = '\n'.join(zipped)
 
@@ -147,10 +154,13 @@ def publish_to_es(validated_data: t.List[ChatLog], es_host: str, index="twitch_v
 
         url = urljoin(es_host, "_bulk")
         r = requests.post(
-                url,
-                data = payload,
-                headers = {"Content-Type": "application/x-ndjson"},
-            )
+            url,
+            data=payload,
+            headers={
+                "Content-Type": "application/x-ndjson"
+                "Authorization: ApiKey $ECE_API_KEY"
+            },
+        )
         print("Response:")
         print(r.text)
 
@@ -160,22 +170,26 @@ def publish_to_es(validated_data: t.List[ChatLog], es_host: str, index="twitch_v
 
 if __name__ == "__main__":
     DATA_DIR: Path = Path(Path.home(), "data/twitch_vod_scraper")
-    ES_HOST = "http://elastic-search:9200"  # container name
-    DRY_RUN = False
+    # ES_HOST = "http://elastic-search:9200"  # container name, depcrecated - experimenting with hosted solution.
+    API_KEY = os.getenv("EC_API_KEY")
+    ES_HOST = "https://api.elastic-cloud.com/api/v1/"
+    DRY_RUN = True
 
     print(f"""
-    Starting Twitch VOD pipeline into Elastic Search:
-        source: valid files in {DATA_DIR}
-        dest: Elastic Search index at {ES_HOST}
-    """)
+  Starting Twitch VOD pipeline into Elastic Search:
+      source: valid files in {DATA_DIR}
+      dest: Elastic Search index at {ES_HOST}
+  """)
 
     json_files = [f for f in os.listdir(DATA_DIR)]
     for f in json_files:
         path = Path(DATA_DIR, f)
         is_valid, validated_data = validate_file(path=path)
 
-    if not DRY_RUN:
-        print(F"publishing to {ES_HOST}")
-        publish_to_es(validated_data=validated_data, es_host=ES_HOST)
-    else:
-        print("This is a dry run, not actually doing anything.")
+        if not DRY_RUN:
+            print(F"publishing to {ES_HOST}")
+            publish_to_es(validated_data=validated_data,
+                          es_host=ES_HOST, api_key=API_KEY)
+        else:
+            print("This is a dry run, not actually doing anything.")
+            print(f"api_key={API_KEY}")

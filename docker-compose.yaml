@@ -29,7 +29,6 @@ services:
       - ~/data:/home/appuser/data
     networks:
      - fir-sandbox-network
-    command: bash
 
 networks:
   fir-sandbox-network:
