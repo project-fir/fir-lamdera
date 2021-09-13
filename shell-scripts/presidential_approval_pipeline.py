@@ -8,14 +8,6 @@ from pydantic import BaseModel
 from urllib.parse import urljoin
 
 
-"""
-Goal here is to populate ES with BS data that is:
- * simple to fetch more of
- * isn't too messy but not too clean either
- * fun
-"""
-
-
 class _Config(BaseModel):
     es_cloud_hostname: str
     api_key: str
@@ -92,10 +84,10 @@ def validate_file(path: str) -> t.Tuple[bool, t.Optional[t.List[ApprovalRatingDo
 
 def publish_to_es(validated_data: t.List[ApprovalRatingDoc], config: _Config):
     """
-    Given validated chat logs, create an index for them to go in, and place
+    Given validated data, publish document (in chunks) to the already created engine
 
-
-    Note: feeling lazy, going with dynamic mappings, might be worth looking into static mappings
+    Note: For the time being, I'm doing schema checking with the ES-Cloud UI. I think that's a bit
+    more practical while I develop the Elm UI for the same thing.
 
     Important limitations:
       Documents are sent via an array and are independently accepted and indexed, or rejected.
