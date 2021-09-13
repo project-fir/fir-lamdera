@@ -6,8 +6,10 @@ Ideas:
  * During development of the twitch_vod pipeline, I stumbled upon this. I'm starting to see an idea emerge where Lamdera can be used to manage metadata https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
 
 References:
-elastic cloud API: https://www.elastic.co/guide/en/cloud/current/ec-restful-api.html
-Dashboard: https://fir-sandbox.ent.eastus2.azure.elastic-cloud.com/ent/select
+
+ * Dashboard: https://fir-sandbox.ent.eastus2.azure.elastic-cloud.com/ent/select
+ * elastic cloud API: https://www.elastic.co/guide/en/cloud/current/ec-restful-api.html
+
 Guide on document indexing: https://www.elastic.co/guide/en/app-search/7.14/indexing-documents-guide.html
 
 Environment variables:
@@ -18,3 +20,6 @@ Radar:
  * Entity relation diagram in Elm: https://github.com/azimuttapp/azimutt
 
 
+Features on the docket:
+ * regex pre-validation of input data, UI based - ran into issues with ES cloud validator
+ * simple nesting / un-nesting, UI based - ran into issues with Slides exporter not supporting row-indices, which would've solved this problem, see `presidential_approval_pipeline.py` for an example (the nested `for` loop)
