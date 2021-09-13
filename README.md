@@ -14,3 +14,7 @@ Environment variables:
 The Python scripts in this repo assume the environment variable `ELASTIC_CLOUD_API_KEY` is set
 
 
+Radar:
+ * Entity relation diagram in Elm: https://github.com/azimuttapp/azimutt
+
+
