@@ -130,7 +130,7 @@ if __name__ == "__main__":
         api_key=os.getenv("ELASTIC_CLOUD_API_KEY"),
         destination_engine="presidential-approval-ratings",
         source_dir=Path(Path.home(), "data/presidential_approval"),
-        dry_run=False,
+        dry_run=True,
     )
 
     print(f"""

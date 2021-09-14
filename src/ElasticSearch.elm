@@ -50,11 +50,7 @@ import Time.Date as Date exposing (Date)
 It appears unmaintained, and never made its way into an actual elm package. Searching for "elastic" there led me to this repo:
 <https://github.com/allo-media/elm-es-simple-query-string>
 ^ fun stuff, but I think the less polished repo is closer to what I want, I could be wrong though.
-
--}
-
-
-{-| Easily generate typesafe elasticsearch queries
+Easily generate typesafe elasticsearch queries
 
 @docs Query, SearchRequest, searchRequest
 
