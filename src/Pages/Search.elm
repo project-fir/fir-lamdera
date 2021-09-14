@@ -1,11 +1,18 @@
 module Pages.Search exposing (Model, Msg, page)
 
+import Api.Data exposing (..)
 import Chart as C
 import Chart.Attributes as CA
+import Json.Encode
+import Json.Decode exposing ((:=))
+-- elm-package install --yes circuithub/elm-json-extra
+import Json.Decode.Extra exposing ((|:))
 import Chart.Events as CE
 import Chart.Item as CI
 import Color
 import Components.Styling as S
+import Date exposing (Date)
+import Debug
 import Dict as D
 import Effect exposing (Effect)
 import ElasticSearch as ES exposing (..)
@@ -18,8 +25,6 @@ import Element.Input as Input
 import Gen.Params.Search exposing (Params)
 import Html as H
 import Http
-import Json.Decode as JD
-import Json.Encode as JE
 import Page
 import Request
 import Shared
@@ -43,12 +48,14 @@ page shared req =
 
 type alias Model =
     { searchText : String
+    , chartData : Data (List PresidentialApproval)
     }
 
 
 init : Shared.Model -> ( Model, Effect Msg )
 init _ =
     ( { searchText = ""
+      , chartData = NotAsked
       }
     , Effect.none
     )
@@ -62,12 +69,21 @@ type Msg
     = SearchTextChanged String
     | UserClickedSearch
     | UserClickedFetch
-    | SearchResponded (Result Http.Error SearchResponse)
-    | FetchResponded (Result Http.Error AppSearchResponse)
+    | FetchResponded (Result Http.Error (Data (List PresidentialApproval)))
 
 
-type alias AppSearchResponse =
-    {}
+type alias PresidentialApproval =
+    { presidentName : String
+    , startDate : Date
+    , disapproving : Float
+    , approving : Float
+    , unsureNoData : Float
+    }
+
+
+type alias AppSearchResponse result =
+    { results : List result
+    }
 
 
 update : Msg -> Model -> ( Model, Effect Msg )
@@ -94,24 +110,32 @@ update msg model =
                     }
             in
             ( model
-            , Effect.fromCmd <| submitSearchRequest searchRequest
+            , Effect.none
+              -- , Effect.fromCmd <| submitSearchRequest searchRequest
             )
 
-        SearchResponded result ->
-            case result of
-                Ok str ->
-                    ( model, Effect.none )
-
-                Err errs ->
-                    ( model, Effect.none )
-
         UserClickedFetch ->
-            ( model
+            ( { model
+                | chartData = Loading
+              }
             , Effect.fromCmd <| submitAppSearchRequest defaultAppSearchRequest
             )
 
         FetchResponded result ->
-            ( model, Effect.none )
+            case result of
+                Ok response ->
+                    ( { model
+                        | chartData = response
+                      }
+                    , Effect.none
+                    )
+
+                Err errs ->
+                    ( { model
+                        | chartData = Failure <| [ Debug.toString errs ]
+                      }
+                    , Effect.none
+                    )
 
 
 
@@ -149,6 +173,7 @@ viewElements model =
         ]
         [ Element.text <| "This is a column!"
         , viewChartElement
+            model
             rawData
             [ Border.color S.dimGrey
             , Border.width 2
@@ -181,8 +206,8 @@ rawData =
     ]
 
 
-viewChartElement : List { x : Float, y : Float, z : Float } -> List (Attribute Msg) -> ( Int, Int ) -> Element Msg
-viewChartElement data attrs ( wpx, hpx ) =
+viewChartElement : Model -> List { x : Float, y : Float, z : Float } -> List (Attribute Msg) -> ( Int, Int ) -> Element Msg
+viewChartElement model data attrs ( wpx, hpx ) =
     -- This is a bit weird, but I think the culprit is the containing `el` must have the same width / height as what is set in elm-charts height and width
     -- I'm not sure, but I think it may be related to this issue: https://github.com/mdgriffith/elm-ui/issues/146
     let
@@ -200,17 +225,35 @@ viewChartElement data attrs ( wpx, hpx ) =
                     ]
                     data
                 ]
+
+        el_ =
+            el
+                ([ width <| px wpx
+                 , height <| px hpx
+                 , padding 25 -- Not sure what's up with this padding
+                 ]
+                    ++ attrs
+                )
+
+        elements =
+            case model.chartData of
+                NotAsked ->
+                    Element.text "Not asked yet"
+
+                Loading ->
+                    Element.text "Loading.."
+
+                Success data_ ->
+                    Element.text "Success?"
+
+                -- Element.html <|
+                --     viewLineChart ( toFloat wpx, toFloat hpx )
+                Failure errs ->
+                    Element.text "Error"
+
+        -- Element.column [] <| List.map (\e -> Element.text e) errs
     in
-    el
-        ([ width <| px wpx
-         , height <| px hpx
-         , padding 25 -- Not sure what's up with this padding
-         ]
-            ++ attrs
-        )
-    <|
-        Element.html <|
-            viewLineChart ( toFloat wpx, toFloat hpx )
+    el_ elements
 
 
 
@@ -250,31 +293,35 @@ host =
     "https://fir-sandbox.ent.eastus2.azure.elastic-cloud.com"
 
 
-endpoint =
+documentsEndpoint =
     "/api/as/v1/engines/presidential-approval-ratings-dev/documents"
 
 
-submitSearchRequest : ES.SearchRequest -> Cmd Msg
-submitSearchRequest searchRequest =
-    let
-        endcodedRequest =
-            ES.encodeSearchRequest searchRequest
+appSearchEndpoint =
+    "/api/as/v1/engines/presidential-approval-ratings-dev/search"
 
-        url =
-            host ++ endpoint
-    in
-    Http.request
-        { method = "POST"
-        , headers =
-            [ Http.header "Content-Type" "application/json"
-            , Http.header "Authorization" "Bearer TODO: Make this private!"
-            ]
-        , url = url
-        , body = Http.jsonBody endcodedRequest
-        , expect = Http.expectJson SearchResponded searchResponseDecoder
-        , timeout = Nothing
-        , tracker = Nothing
-        }
+
+
+-- submitSearchRequest : ES.SearchRequest -> Cmd Msg
+-- submitSearchRequest searchRequest =
+--     let
+--         endcodedRequest =
+--             ES.encodeSearchRequest searchRequest
+--         url =
+--             host ++ appSearchEndpoint
+--     in
+--     Http.request
+--         { method = "POST"
+--         , headers =
+--             [ Http.header "Content-Type" "application/json"
+--             , Http.header "Authorization" "Bearer TODO: Make this private!"
+--             ]
+--         , url = url
+--         , body = Http.jsonBody endcodedRequest
+--         , expect = Http.expectJson SearchResponded searchResponseDecoder
+--         , timeout = Nothing
+--         , tracker = Nothing
+--         }
 
 
 submitAppSearchRequest : AppSearchRequest -> Cmd Msg
@@ -284,17 +331,17 @@ submitAppSearchRequest req =
             encodeAppSearchRequest req
 
         url =
-            host ++ endpoint
+            host ++ appSearchEndpoint
     in
     Http.request
         { method = "POST"
         , headers =
             [ Http.header "Content-Type" "application/json"
-            , Http.header "Authorization" "Bearer TODO: Make this private!"
+            , Http.header "Authorization" "Bearer private-CENSORED"
             ]
         , url = url
         , body = Http.jsonBody encReq
-        , expect = Http.expectJson SearchResponded searchResponseDecoder
+        , expect = Http.expectJson FetchResponded appSearchResponseDecoder
         , timeout = Nothing
         , tracker = Nothing
         }
@@ -336,3 +383,117 @@ encodeAppSearchRequest req =
                 [ ( "president_name", JE.list JE.string req.filters ) ]
           )
         ]
+
+
+appSearchResponseDecoder : JD.Decoder (Data (List PresidentialApproval))
+appSearchResponseDecoder =
+    Debug.todo "This!"
+
+
+rowDecoder : JD.Decoder PresidentialApproval
+rowDecoder =
+    JD.map5 PresidentialApproval
+        (JD.field "president_name")
+
+
+
+type alias ComplexType =
+    {
+
+    }
+
+
+
+type alias FetchResponse = { 
+    meta : Meta
+    , results : List ComplexType
+    }
+
+type alias MetaPage =
+    { current : Int
+    , total_pages : Int
+    , total_results : Int
+    , size : Int
+    }
+
+type alias MetaEngine =
+    { name : String
+    , type : String
+    }
+
+type alias Meta =
+    { alerts : List ComplexType
+    , warnings : List ComplexType
+    , precision : Int
+    , page : MetaPage
+    , engine : MetaEngine
+    , request_id : String
+    }
+
+decode : Json.Decode.Decoder 
+decode =
+    Json.Decode.succeed 
+        |: ("" := decode)
+        |: ("meta" := decodeMeta)
+        |: ("results" := Json.Decode.list decodeComplexType)
+
+decodeMetaPage : Json.Decode.Decoder MetaPage
+decodeMetaPage =
+    Json.Decode.succeed MetaPage
+        |: ("current" := Json.Decode.int)
+        |: ("total_pages" := Json.Decode.int)
+        |: ("total_results" := Json.Decode.int)
+        |: ("size" := Json.Decode.int)
+
+decodeMetaEngine : Json.Decode.Decoder MetaEngine
+decodeMetaEngine =
+    Json.Decode.succeed MetaEngine
+        |: ("name" := Json.Decode.string)
+        |: ("type" := Json.Decode.string)
+
+decodeMeta : Json.Decode.Decoder Meta
+decodeMeta =
+    Json.Decode.succeed Meta
+        |: ("alerts" := Json.Decode.list decodeComplexType)
+        |: ("warnings" := Json.Decode.list decodeComplexType)
+        |: ("precision" := Json.Decode.int)
+        |: ("page" := decodeMetaPage)
+        |: ("engine" := decodeMetaEngine)
+        |: ("request_id" := Json.Decode.string)
+
+encode :  -> Json.Encode.Value
+encode record =
+    Json.Encode.object
+        [ ("",  encode <| record.)
+        , ("meta",  encodeMeta <| record.meta)
+        , ("results",  Json.Encode.list <| List.map encodeComplexType <| record.results)
+        ]
+
+encodeMetaPage : MetaPage -> Json.Encode.Value
+encodeMetaPage record =
+    Json.Encode.object
+        [ ("current",  Json.Encode.int <| record.current)
+        , ("total_pages",  Json.Encode.int <| record.total_pages)
+        , ("total_results",  Json.Encode.int <| record.total_results)
+        , ("size",  Json.Encode.int <| record.size)
+        ]
+
+encodeMetaEngine : MetaEngine -> Json.Encode.Value
+encodeMetaEngine record =
+    Json.Encode.object
+        [ ("name",  Json.Encode.string <| record.name)
+        , ("type",  Json.Encode.string <| record.type)
+        ]
+
+encodeMeta : Meta -> Json.Encode.Value
+encodeMeta record =
+    Json.Encode.object
+        [ ("alerts",  Json.Encode.list <| List.map encodeComplexType <| record.alerts)
+        , ("warnings",  Json.Encode.list <| List.map encodeComplexType <| record.warnings)
+        , ("precision",  Json.Encode.int <| record.precision)
+        , ("page",  encodeMetaPage <| record.page)
+        , ("engine",  encodeMetaEngine <| record.engine)
+        , ("request_id",  Json.Encode.string <| record.request_id)
+        ]
+
+
