@@ -6,6 +6,7 @@ import Chart.Events as CE
 import Chart.Item as CI
 import Color
 import Components.Styling as S
+import Dict as D
 import Effect exposing (Effect)
 import ElasticSearch as ES exposing (..)
 import Element exposing (..)
@@ -18,6 +19,7 @@ import Gen.Params.Search exposing (Params)
 import Html as H
 import Http
 import Json.Decode as JD
+import Json.Encode as JE
 import Page
 import Request
 import Shared
@@ -253,3 +255,30 @@ searchResponseDecoder : JD.Decoder SearchResponse
 searchResponseDecoder =
     JD.map SearchResponse
         (JD.at [ "someField" ] JD.string)
+
+
+type alias AppSearchRequest =
+    { query : String
+    , filters : List String
+    }
+
+
+defaultAppSearchRequest =
+    { query = ""
+    , filters = [ "Barrack Obama", "George W. Bush" ] -- TODO: I want this formatting eventually: Dict[Dim, EnumeratedValues]
+    }
+
+
+encodeAppSearchRequest : AppSearchRequest -> JE.Value
+encodeAppSearchRequest req =
+    -- let
+    --     encodeFilters : D.Dict String (List String)
+    --     encodeFilters d =
+    -- in
+    JE.object <|
+        [ ( "query", JE.string req.query )
+        , ( "filters"
+          , JE.object <|
+                [ ( "president_name", JE.list JE.string req.filters ) ]
+          )
+        ]
