@@ -1,7 +1,7 @@
-# elm-package generated files
+.DS_Store
+.elm-spa
 elm-stuff
-# elm-repl generated files
-repl-temp-*
+node_modules
+dist
 
 .idea/
-*.env

@@ -36,7 +36,5 @@
         - FaunaDB also looks interesting, but it's too much of a leap relative to my current skillset. I want to stay focused on the Lamdera aspect, if I'm successful Fauna deserves a closer look for sure.
         - DataWarehousing products like BigQuery and Snowflake have lots of setup, and are higher latency. Punting this, though needs more consideration.
     * I'm going with Elastic Search for now, with the expectation of running into HTTP-related latency issues.
-    * starting to piece together a project plan, see idea.md in this directory
+    * starting to piece together a project plan, see `ideas.md` in this directory
     * using the idea of fewest semantic boundaries. Example is pulling in predisential data. Exporting to JSON and using the Elastic Cloud UI is how I'm going to do it. Current idea is to maintain proper lineage that this data is from a non-reproducible source, and using evergreen migrations to keep old pipelines up to date.
-    
-    

@@ -1,7 +1,8 @@
 module ElasticSearch exposing
-    ( Query
+    ( Query(..)
     , SearchRequest
-    , Value
+    , TermQuery
+    , Value(..)
     , asc
     , bool
     , boost
@@ -41,8 +42,8 @@ module ElasticSearch exposing
     , type_
     )
 
+import Date as Date exposing (Date)
 import Json.Encode as JE
-import Time.Date as Date exposing (Date)
 
 
 {-| Note: I found this library here: <https://github.com/orus-io/elm-elasticsearch>
@@ -50,11 +51,7 @@ import Time.Date as Date exposing (Date)
 It appears unmaintained, and never made its way into an actual elm package. Searching for "elastic" there led me to this repo:
 <https://github.com/allo-media/elm-es-simple-query-string>
 ^ fun stuff, but I think the less polished repo is closer to what I want, I could be wrong though.
-
--}
-
-
-{-| Easily generate typesafe elasticsearch queries
+Easily generate typesafe elasticsearch queries
 
 @docs Query, SearchRequest, searchRequest
 
@@ -109,8 +106,8 @@ encodeObject list =
         |> List.filterMap
             (\( name, value ) ->
                 case value of
-                    Just value ->
-                        Just ( name, value )
+                    Just value_ ->
+                        Just ( name, value_ )
 
                     Nothing ->
                         Nothing
@@ -165,17 +162,17 @@ date =
 encodeValue : Value -> JE.Value
 encodeValue value =
     case value of
-        IntValue value ->
-            JE.int value
+        IntValue value_ ->
+            JE.int value_
 
-        StringValue value ->
-            JE.string value
+        StringValue value_ ->
+            JE.string value_
 
-        FloatValue value ->
-            JE.float value
+        FloatValue value_ ->
+            JE.float value_
 
-        DateValue value ->
-            Date.toISO8601 value
+        DateValue value_ ->
+            Date.toIsoString value_
                 |> JE.string
 
 
@@ -197,10 +194,10 @@ encodeTermQuery q =
                         ( Nothing, Nothing ) ->
                             encodeValue q.value
 
-                        ( boost, qname ) ->
+                        ( boost_, qname ) ->
                             encodeObject
                                 [ ( "value", Just <| encodeValue q.value )
-                                , encodeBoost boost
+                                , encodeBoost boost_
                                 , encodeQueryName qname
                                 ]
                   )
@@ -354,8 +351,8 @@ encodeLowerBound bound =
 
 
 encodeBoost : Maybe Float -> ( String, Maybe JE.Value )
-encodeBoost boost =
-    ( "boost", Maybe.map JE.float boost )
+encodeBoost boost_ =
+    ( "boost", Maybe.map JE.float boost_ )
 
 
 encodeQueryName : Maybe String -> ( String, Maybe JE.Value )
@@ -451,17 +448,17 @@ type Query
 encodeQuery : Query -> JE.Value
 encodeQuery q =
     case q of
-        Term q ->
-            encodeTermQuery q
+        Term q_ ->
+            encodeTermQuery q_
 
-        Range q ->
-            encodeRangeQuery q
+        Range q_ ->
+            encodeRangeQuery q_
 
-        Type q ->
-            encodeTypeQuery q
+        Type q_ ->
+            encodeTypeQuery q_
 
-        Bool q ->
-            encodeBoolQuery q
+        Bool q_ ->
+            encodeBoolQuery q_
 
 
 encodeQueryList : List Query -> Maybe JE.Value
@@ -473,11 +470,8 @@ encodeQueryList qlist =
         [ single ] ->
             Just <| encodeQuery single
 
-        qlist ->
-            qlist
-                |> List.map encodeQuery
-                |> JE.list
-                |> Just
+        qlist_ ->
+            Just <| JE.list encodeQuery qlist_
 
 
 {-| A `term` query
@@ -513,8 +507,8 @@ type_ typename =
 maybeCombine : Maybe a -> Maybe a -> Maybe a
 maybeCombine a b =
     case a of
-        Just a ->
-            Just a
+        Just a_ ->
+            Just a_
 
         _ ->
             b
@@ -595,17 +589,17 @@ For some queries, like `term`, it is a no-op
 boost : Float -> Query -> Query
 boost b q =
     case q of
-        Term q ->
-            Term { q | boost = Just b }
+        Term q_ ->
+            Term { q_ | boost = Just b }
 
-        Range q ->
-            Range { q | boost = Just b }
+        Range q_ ->
+            Range { q_ | boost = Just b }
 
-        Type q ->
-            Type q
+        Type q_ ->
+            Type q_
 
-        Bool q ->
-            Bool { q | boost = Just b }
+        Bool q_ ->
+            Bool { q_ | boost = Just b }
 
 
 type SortOrder
@@ -764,8 +758,7 @@ encodeSearchRequest request =
 
                     list ->
                         [ ( "sort"
-                          , List.map encodeSort list
-                                |> JE.list
+                          , JE.list encodeSort list
                           )
                         ]
                )

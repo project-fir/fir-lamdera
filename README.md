@@ -9,8 +9,7 @@ References:
 
  * Dashboard: https://fir-sandbox.ent.eastus2.azure.elastic-cloud.com/ent/select
  * elastic cloud API: https://www.elastic.co/guide/en/cloud/current/ec-restful-api.html
-
-Guide on document indexing: https://www.elastic.co/guide/en/app-search/7.14/indexing-documents-guide.html
+ * Guide on document indexing: https://www.elastic.co/guide/en/app-search/7.14/indexing-documents-guide.html
 
 Environment variables:
 The Python scripts in this repo assume the environment variable `ELASTIC_CLOUD_API_KEY` is set

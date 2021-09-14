@@ -9,6 +9,7 @@ import Gen.Params.Home_
 import Gen.Params.Login
 import Gen.Params.NotFound
 import Gen.Params.Register
+import Gen.Params.Search
 import Gen.Params.Settings
 import Gen.Params.Profile.Username_
 import Url exposing (Url)
@@ -21,6 +22,7 @@ type Route
     | Login
     | NotFound
     | Register
+    | Search
     | Settings
     | Profile__Username_ { username : String }
 
@@ -37,6 +39,7 @@ routes =
     , Parser.map Login Gen.Params.Login.parser
     , Parser.map NotFound Gen.Params.NotFound.parser
     , Parser.map Register Gen.Params.Register.parser
+    , Parser.map Search Gen.Params.Search.parser
     , Parser.map Settings Gen.Params.Settings.parser
     , Parser.map Profile__Username_ Gen.Params.Profile.Username_.parser
     ]
@@ -64,6 +67,9 @@ toHref route =
     
         Register ->
             joinAsHref [ "register" ]
+    
+        Search ->
+            joinAsHref [ "search" ]
     
         Settings ->
             joinAsHref [ "settings" ]

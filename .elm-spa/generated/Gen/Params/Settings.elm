@@ -8,5 +8,4 @@ type alias Params =
 
 
 parser =
-    (Parser.s "settings")
-
+    Parser.s "settings"
