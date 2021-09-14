@@ -61,7 +61,13 @@ init _ =
 type Msg
     = SearchTextChanged String
     | UserClickedSearch
+    | UserClickedFetch
     | SearchResponded (Result Http.Error SearchResponse)
+    | FetchResponded (Result Http.Error AppSearchResponse)
+
+
+type alias AppSearchResponse =
+    {}
 
 
 update : Msg -> Model -> ( Model, Effect Msg )
@@ -99,6 +105,14 @@ update msg model =
                 Err errs ->
                     ( model, Effect.none )
 
+        UserClickedFetch ->
+            ( model
+            , Effect.fromCmd <| submitAppSearchRequest defaultAppSearchRequest
+            )
+
+        FetchResponded result ->
+            ( model, Effect.none )
+
 
 
 -- SUBSCRIPTIONS
@@ -129,17 +143,34 @@ view model =
 
 viewElements : Model -> Element Msg
 viewElements model =
-    Element.row
-        [ padding 0
+    Element.column
+        [ paddingEach { left = 150, right = 20, top = 20, bottom = 20 }
         , spacing 50
         ]
-        [ Element.text <| "This is a row!"
+        [ Element.text <| "This is a column!"
         , viewChartElement
             rawData
             [ Border.color S.dimGrey
             , Border.width 2
             ]
             ( 400, 400 )
+        , Input.button
+            [ Background.color S.medGrey
+            , Font.color S.black
+            , Font.bold
+            , Border.color S.dimGrey
+            , Border.width 5
+
+            -- , paddingXY 32 16
+            -- , Border.rounded 10
+            , Element.width fill
+
+            -- , Element.height fill
+            , centerX
+            ]
+            { onPress = Just UserClickedFetch
+            , label = el [ centerX ] <| Element.text "Fetch:"
+            }
         ]
 
 
@@ -240,6 +271,29 @@ submitSearchRequest searchRequest =
             ]
         , url = url
         , body = Http.jsonBody endcodedRequest
+        , expect = Http.expectJson SearchResponded searchResponseDecoder
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+submitAppSearchRequest : AppSearchRequest -> Cmd Msg
+submitAppSearchRequest req =
+    let
+        encReq =
+            encodeAppSearchRequest req
+
+        url =
+            host ++ endpoint
+    in
+    Http.request
+        { method = "POST"
+        , headers =
+            [ Http.header "Content-Type" "application/json"
+            , Http.header "Authorization" "Bearer TODO: Make this private!"
+            ]
+        , url = url
+        , body = Http.jsonBody encReq
         , expect = Http.expectJson SearchResponded searchResponseDecoder
         , timeout = Nothing
         , tracker = Nothing
