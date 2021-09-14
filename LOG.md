@@ -38,3 +38,6 @@
     * I'm going with Elastic Search for now, with the expectation of running into HTTP-related latency issues.
     * starting to piece together a project plan, see `ideas.md` in this directory
     * using the idea of fewest semantic boundaries. Example is pulling in predisential data. Exporting to JSON and using the Elastic Cloud UI is how I'm going to do it. Current idea is to maintain proper lineage that this data is from a non-reproducible source, and using evergreen migrations to keep old pipelines up to date.
+    * oy, json decoding/encoding.. But more importantly it seems that the Elastic Cloud API has differences from the one I'm used to. Need to spend time to double check I'm barking up the corret tree and this "engine" (we're choice of wording IMO) can do the BI functions, and not have to use a different Elastic product..
+    * .. and .. bummer, `aggs` is not supported on their cloud offering. 
+    * .. and .. another set-back, `elm-ui` and `elm-charts` don't seem to get along. At this point I can't tell if it's a large issue, but `viewport` seems to be the culprit (it's not inheriting the height, width dimensions of parent `row`s/`column`s)

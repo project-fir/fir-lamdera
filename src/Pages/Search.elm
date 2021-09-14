@@ -1,7 +1,11 @@
 module Pages.Search exposing (Model, Msg, page)
 
+import Chart as C
+import Chart.Attributes as CA
+import Chart.Events as CE
+import Chart.Item as CI
+import Color
 import Components.Styling as S
-import Debug
 import Effect exposing (Effect)
 import ElasticSearch as ES exposing (..)
 import Element exposing (..)
@@ -11,6 +15,7 @@ import Element.Events exposing (..)
 import Element.Font as Font
 import Element.Input as Input
 import Gen.Params.Search exposing (Params)
+import Html as H
 import Http
 import Json.Decode as JD
 import Page
@@ -108,9 +113,14 @@ subscriptions model =
 
 view : Model -> View Msg
 view model =
-    { title = ""
+    { title = "elm-ui"
     , body =
-        [ layout [] <| viewElements model
+        [ layout
+            [ width fill
+            , height fill
+            ]
+          <|
+            viewElements model
         ]
     }
 
@@ -118,36 +128,87 @@ view model =
 viewElements : Model -> Element Msg
 viewElements model =
     Element.row
-        [ padding 20
-        , spacing 10
+        [ padding 0
+        , spacing 50
         ]
-        [ Input.search [ width <| px 600 ]
-            { onChange = \text -> SearchTextChanged text
-            , text = model.searchText
-            , placeholder = Nothing
-            , label = Input.labelAbove [] <| Element.text "Search Fir:"
-            }
-        , Input.button
-            [ Background.color S.medGrey
-            , Font.color S.black
-            , Font.bold
-            , Border.color S.dimGrey
-            , Border.width 5
-
-            -- , paddingXY 32 16
-            -- , Border.rounded 10
-            , Element.width fill
-
-            -- , Element.height fill
-            , centerX
+        [ Element.text <| "This is a row!"
+        , viewChartElement
+            rawData
+            [ Border.color S.dimGrey
+            , Border.width 2
             ]
-            { onPress = Just UserClickedSearch
-            , label = el [ centerX ] <| Element.text "Go:"
-            }
+            ( 400, 400 )
         ]
 
 
+rawData =
+    [ { x = 1, y = 2, z = 3 }
+    , { x = 5, y = 4, z = 1 }
+    , { x = 10, y = 2, z = 4 }
+    ]
 
+
+viewChartElement : List { x : Float, y : Float, z : Float } -> List (Attribute Msg) -> ( Int, Int ) -> Element Msg
+viewChartElement data attrs ( wpx, hpx ) =
+    -- This is a bit weird, but I think the culprit is the containing `el` must have the same width / height as what is set in elm-charts height and width
+    -- I'm not sure, but I think it may be related to this issue: https://github.com/mdgriffith/elm-ui/issues/146
+    let
+        viewLineChart : ( Float, Float ) -> H.Html Msg
+        viewLineChart ( wpx_, hpx_ ) =
+            C.chart
+                [ CA.width wpx_
+                , CA.height hpx_
+                ]
+                [ C.xLabels [ CA.withGrid ]
+                , C.yLabels [ CA.withGrid ]
+                , C.series .x
+                    [ C.interpolated .y [ CA.monotone ] [ CA.circle ]
+                    , C.interpolated .z [ CA.monotone ] [ CA.square ]
+                    ]
+                    data
+                ]
+    in
+    el
+        ([ width <| px wpx
+         , height <| px hpx
+         , padding 25 -- Not sure what's up with this padding
+         ]
+            ++ attrs
+        )
+    <|
+        Element.html <|
+            viewLineChart ( toFloat wpx, toFloat hpx )
+
+
+
+-- viewElements : Model -> Element Msg
+-- viewElements model =
+--     Element.column
+--         [ padding 20
+--         , spacing 10
+--         ]
+--         [ Input.search [ width <| px 600 ]
+--             { onChange = \text -> SearchTextChanged text
+--             , text = model.searchText
+--             , placeholder = Nothing
+--             , label = Input.labelAbove [] <| Element.text "Search Fir:"
+--             }
+--         , Input.button
+--             [ Background.color S.medGrey
+--             , Font.color S.black
+--             , Font.bold
+--             , Border.color S.dimGrey
+--             , Border.width 5
+--             -- , paddingXY 32 16
+--             -- , Border.rounded 10
+--             , Element.width fill
+--             -- , Element.height fill
+--             , centerX
+--             ]
+--             { onPress = Just UserClickedSearch
+--             , label = el [ centerX ] <| Element.text "Go:"
+--             }
+--         ]
 -- HTTP
 -- TODO: Does this belong in ElasticSearch.elm? How do I map Msgs to Pages then??
 
