@@ -92,14 +92,13 @@ view req { page, toMsg } model =
             page.title ++ " | Fir"
     , body =
         css
-            ++ [ div [ class "layout" ]
+            ++ [ div []
                     [ Components.Navbar.view
                         { user = model.user
                         , currentRoute = Utils.Route.fromUrl req.url
                         , onSignOut = toMsg ClickedSignOut
                         }
-                    , div [ class "page" ] page.body
-                    , Components.Footer.view
+                    , div [] page.body
                     ]
                ]
     }
