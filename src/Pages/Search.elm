@@ -82,7 +82,7 @@ type Msg
 
 type alias PresidentialApprovalDatum =
     { presidentName : String
-    , startDate : Date
+    , startDate : String
     , disapproving : Float
     , approving : Float
     , unsureNoData : Float
@@ -174,8 +174,7 @@ viewElements model =
         [ paddingEach { left = 150, right = 20, top = 20, bottom = 20 }
         , spacing 50
         ]
-        [ Element.text <| "This is a column!"
-        , viewChartElement
+        [ viewChartElement
             model
             rawData
             [ Border.color S.dimGrey
@@ -302,29 +301,6 @@ appSearchEndpoint =
     "/api/as/v1/engines/presidential-approval-ratings-dev/search"
 
 
-
--- submitSearchRequest : ES.SearchRequest -> Cmd Msg
--- submitSearchRequest searchRequest =
---     let
---         endcodedRequest =
---             ES.encodeSearchRequest searchRequest
---         url =
---             host ++ appSearchEndpoint
---     in
---     Http.request
---         { method = "POST"
---         , headers =
---             [ Http.header "Content-Type" "application/json"
---             , Http.header "Authorization" "Bearer TODO: Make this private!"
---             ]
---         , url = url
---         , body = Http.jsonBody endcodedRequest
---         , expect = Http.expectJson SearchResponded searchResponseDecoder
---         , timeout = Nothing
---         , tracker = Nothing
---         }
-
-
 submitAppSearchRequest : AppSearchRequest -> Cmd Msg
 submitAppSearchRequest req =
     let
@@ -338,7 +314,7 @@ submitAppSearchRequest req =
         { method = "POST"
         , headers =
             [ Http.header "Content-Type" "application/json"
-            , Http.header "Authorization" "Bearer private-CENSORED"
+            , Http.header "Authorization" "Bearer private-1hnbxz9389riabh8vx5w52za"
             ]
         , url = url
         , body = Http.jsonBody encReq
@@ -357,11 +333,16 @@ submitAppSearchRequest req =
 mapResponse : AppSearchResponse -> Data (List PresidentialApprovalDatum)
 mapResponse res =
     let
-        res_ : List PresidentialApprovalDatum
-        res_ =
-            []
+        map_ : RootResultsObject -> PresidentialApprovalDatum
+        map_ obj =
+            { presidentName = obj.presidentName.raw
+            , startDate = obj.startDate.raw
+            , disapproving = toFloat obj.disapproving.raw
+            , approving = toFloat obj.approving.raw
+            , unsureNoData = toFloat obj.unsureNoData.raw
+            }
     in
-    Success res_
+    Success <| List.map map_ res.results
 
 
 
