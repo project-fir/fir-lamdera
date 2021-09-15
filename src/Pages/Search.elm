@@ -1,7 +1,5 @@
 module Pages.Search exposing (Model, Msg, page)
 
--- elm-package install --yes circuithub/elm-json-extra
-
 import Api.AppSearchRequest exposing (AppSearchRequest, encodedAppSearchRequest)
 import Api.AppSearchResponse exposing (AppSearchResponse, appSearchResponseDecoder)
 import Api.Data exposing (..)
@@ -28,6 +26,7 @@ import Http
 import Page
 import Request
 import Shared
+import TypedSvg.Filters.Attributes exposing (in_)
 import Url exposing (Protocol(..))
 import View exposing (View)
 
@@ -66,6 +65,10 @@ defaultAppSearchRequest =
         { presidentName = [ "Barack Obama" ]
         }
     , query = ""
+    , page =
+        { current = 1
+        , size = 100
+        }
     }
 
 
@@ -75,8 +78,7 @@ defaultAppSearchRequest =
 
 type Msg
     = SearchTextChanged String
-    | UserClickedSearch
-    | UserClickedFetch
+    | UserInitiatedBatchedFetch (Maybe (List PresidentialApprovalDatum))
     | FetchResponded (Result Http.Error AppSearchResponse)
 
 
@@ -99,46 +101,56 @@ update msg model =
             , Effect.none
             )
 
-        UserClickedSearch ->
-            let
-                searchRequest =
-                    { query =
-                        ES.Term
-                            { name = "president_name"
-                            , value = StringValue model.searchText
-                            , boost = Nothing
-                            , queryName = Nothing
-                            }
-                    , sort = []
-                    }
-            in
-            ( model
-            , Effect.none
-              -- , Effect.fromCmd <| submitSearchRequest searchRequest
-            )
+        UserInitiatedBatchedFetch dataSofar ->
+            case dataSofar of ->
+                Nothing ->
 
-        UserClickedFetch ->
-            ( { model
-                | chartData = Loading
-              }
-            , Effect.fromCmd <| submitAppSearchRequest defaultAppSearchRequest
-            )
+                    ( { model
+                        | chartData = BatchedLoading 1 100 Nothing []
+                    }
+                    , Effect.fromCmd <| submitAppSearchRequest defaultAppSearchRequest
+                    )
 
         FetchResponded result ->
-            case result of
-                Ok response ->
-                    ( { model
-                        | chartData = mapResponse response
-                      }
-                    , Effect.none
-                    )
+            let
+                ( model_, effect_ ) =
+                    case result of
+                        Ok response ->
+                            let
+                                shouldContinue =
+                                    not (response.meta.page.current == response.meta.page.totalPages)
 
-                Err errs ->
-                    ( { model
-                        | chartData = Failure <| [ Debug.toString errs ]
-                      }
-                    , Effect.none
-                    )
+                                ( model__, effect__ ) =
+                                    case shouldContinue of
+                                        True ->
+                                            let
+                                                dataSoFar =
+                                                    case model.chartData of
+                                                        BatchedLoading cp bs tp dataFromPrevBatches ->
+                                                            mapResponse response ++ dataFromPrevBatches
+
+                                                        _ ->
+                                                            -- TODO: smell?
+                                                            mapResponse response
+                                                
+                                            in
+                                            ( {model,  )
+
+                                        False ->
+                                            ( model, Effect.none )
+                            in
+                            ( model__
+                            , effect__
+                            )
+
+                        Err errs ->
+                            ( { model
+                                | chartData = Failure <| [ Debug.toString errs ]
+                              }
+                            , Effect.none
+                            )
+            in
+            ( model_, effect_ )
 
 
 
@@ -195,7 +207,7 @@ viewElements model =
             -- , Element.height fill
             , centerX
             ]
-            { onPress = Just UserClickedFetch
+            { onPress = Just UserInitiatedBatchedFetch
             , label = el [ centerX ] <| Element.text "Fetch:"
             }
         ]
@@ -243,7 +255,19 @@ viewChartElement model data attrs ( wpx, hpx ) =
                     Element.text "Not asked yet"
 
                 Loading ->
-                    Element.text "Loading.."
+                    Element.text "This is intended for batch loads!"
+
+                BatchedLoading pg sz pc dataSoFar ->
+                    let
+                        copy =
+                            case pc of
+                                Nothing ->
+                                    "Batch loding page " ++ String.fromInt pg ++ " of unknown total page count"
+
+                                Just v ->
+                                    "Batch loding page " ++ String.fromInt pg ++ " of " ++ String.fromInt v
+                    in
+                    Element.text copy
 
                 Success data_ ->
                     Element.text "Success?"
@@ -324,7 +348,7 @@ submitAppSearchRequest req =
         }
 
 
-mapResponse : AppSearchResponse -> Data (List PresidentialApprovalDatum)
+mapResponse : AppSearchResponse -> List PresidentialApprovalDatum
 mapResponse res =
     let
         -- map_ : RootResultsObject -> PresidentialApprovalDatum
@@ -336,4 +360,4 @@ mapResponse res =
             , unsureNoData = toFloat obj.unsureNoData.raw
             }
     in
-    Success <| List.map map_ res.results
+    List.map map_ res.results
