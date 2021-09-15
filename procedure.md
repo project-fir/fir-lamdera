@@ -96,3 +96,324 @@ this in google sheets would require cycling through all the sheets (or perhaps t
     name: `presidential-approval-ratings`
     Language: `English`
  * using `dev-kit` image, run `./shell-scripts/presidential_approval_pipeline.py` from the top-level directory
+
+
+
+ #### Generating starting points for encoder / decoders
+Using this awesome tool: https://korban.net/elm/json2elm/
+
+
+seeds:
+```json
+{
+    "query": "",
+    "filters" : {
+         "president_name": [ "Barack Obama", "George W. Bush"]
+  }
+}
+```
+
+And it's response:
+```json
+{
+    "meta": {
+        "alerts": [],
+        "warnings": [],
+        "precision": 2,
+        "page": {
+            "current": 1,
+            "total_pages": 42,
+            "total_results": 418,
+            "size": 10
+        },
+        "engine": {
+            "name": "presidential-approval-ratings-dev",
+            "type": "default"
+        },
+        "request_id": "PL3us8CoSlimrPb8dYEnyw"
+    },
+    "results": [
+        {
+            "end_date": {
+                "raw": "2015-03-01T08:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 5.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 50.0
+            },
+            "approving": {
+                "raw": 45.0
+            },
+            "start_date": {
+                "raw": "2015-02-23T08:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d76"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d76"
+            }
+        },
+        {
+            "end_date": {
+                "raw": "2015-03-08T08:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 5.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 49.0
+            },
+            "approving": {
+                "raw": 46.0
+            },
+            "start_date": {
+                "raw": "2015-03-02T08:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d75"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d75"
+            }
+        },
+        {
+            "end_date": {
+                "raw": "2015-04-19T07:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 4.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 50.0
+            },
+            "approving": {
+                "raw": 46.0
+            },
+            "start_date": {
+                "raw": "2015-04-13T07:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d6f"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d6f"
+            }
+        },
+        {
+            "end_date": {
+                "raw": "2015-05-03T07:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 4.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 48.0
+            },
+            "approving": {
+                "raw": 48.0
+            },
+            "start_date": {
+                "raw": "2015-04-27T07:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d6d"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d6d"
+            }
+        },
+        {
+            "end_date": {
+                "raw": "2015-05-10T07:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 5.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 48.0
+            },
+            "approving": {
+                "raw": 47.0
+            },
+            "start_date": {
+                "raw": "2015-05-04T07:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d6c"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d6c"
+            }
+        },
+        {
+            "end_date": {
+                "raw": "2015-05-17T07:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 4.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 49.0
+            },
+            "approving": {
+                "raw": 47.0
+            },
+            "start_date": {
+                "raw": "2015-05-11T07:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d6b"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d6b"
+            }
+        },
+        {
+            "end_date": {
+                "raw": "2015-05-24T07:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 5.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 49.0
+            },
+            "approving": {
+                "raw": 46.0
+            },
+            "start_date": {
+                "raw": "2015-05-18T07:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d6a"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d6a"
+            }
+        },
+        {
+            "end_date": {
+                "raw": "2015-05-31T07:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 4.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 49.0
+            },
+            "approving": {
+                "raw": 47.0
+            },
+            "start_date": {
+                "raw": "2015-05-25T07:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d69"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d69"
+            }
+        },
+        {
+            "end_date": {
+                "raw": "2015-07-05T07:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 5.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 49.0
+            },
+            "approving": {
+                "raw": 46.0
+            },
+            "start_date": {
+                "raw": "2015-06-29T07:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d64"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d64"
+            }
+        },
+        {
+            "end_date": {
+                "raw": "2015-07-12T07:00:00+00:00"
+            },
+            "unsure_no_data": {
+                "raw": 5.0
+            },
+            "president_name": {
+                "raw": "Barack Obama"
+            },
+            "disapproving": {
+                "raw": 49.0
+            },
+            "approving": {
+                "raw": 46.0
+            },
+            "start_date": {
+                "raw": "2015-07-06T07:00:00+00:00"
+            },
+            "_meta": {
+                "engine": "presidential-approval-ratings-dev",
+                "score": 1.0,
+                "id": "doc-613f4b72e31f699dbfc34d63"
+            },
+            "id": {
+                "raw": "doc-613f4b72e31f699dbfc34d63"
+            }
+        }
+    ]
+}
+```
+

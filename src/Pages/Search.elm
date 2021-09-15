@@ -1,12 +1,10 @@
 module Pages.Search exposing (Model, Msg, page)
 
+-- elm-package install --yes circuithub/elm-json-extra
+
 import Api.Data exposing (..)
 import Chart as C
 import Chart.Attributes as CA
-import Json.Encode
-import Json.Decode exposing ((:=))
--- elm-package install --yes circuithub/elm-json-extra
-import Json.Decode.Extra exposing ((|:))
 import Chart.Events as CE
 import Chart.Item as CI
 import Color
@@ -25,6 +23,8 @@ import Element.Input as Input
 import Gen.Params.Search exposing (Params)
 import Html as H
 import Http
+import Json.Decode
+import Json.Encode
 import Page
 import Request
 import Shared
@@ -48,7 +48,7 @@ page shared req =
 
 type alias Model =
     { searchText : String
-    , chartData : Data (List PresidentialApproval)
+    , chartData : Data (List PresidentialApprovalDatum)
     }
 
 
@@ -61,6 +61,14 @@ init _ =
     )
 
 
+defaultAppSearchRequest =
+    { filters =
+        { presidentName = [ "Barack Obama" ]
+        }
+    , query = ""
+    }
+
+
 
 -- UPDATE
 
@@ -69,20 +77,15 @@ type Msg
     = SearchTextChanged String
     | UserClickedSearch
     | UserClickedFetch
-    | FetchResponded (Result Http.Error (Data (List PresidentialApproval)))
+    | FetchResponded (Result Http.Error AppSearchResponse)
 
 
-type alias PresidentialApproval =
+type alias PresidentialApprovalDatum =
     { presidentName : String
     , startDate : Date
     , disapproving : Float
     , approving : Float
     , unsureNoData : Float
-    }
-
-
-type alias AppSearchResponse result =
-    { results : List result
     }
 
 
@@ -125,7 +128,7 @@ update msg model =
             case result of
                 Ok response ->
                     ( { model
-                        | chartData = response
+                        | chartData = mapResponse response
                       }
                     , Effect.none
                     )
@@ -249,9 +252,7 @@ viewChartElement model data attrs ( wpx, hpx ) =
                 -- Element.html <|
                 --     viewLineChart ( toFloat wpx, toFloat hpx )
                 Failure errs ->
-                    Element.text "Error"
-
-        -- Element.column [] <| List.map (\e -> Element.text e) errs
+                    Element.column [] <| List.map (\e -> Element.text e) errs
     in
     el_ elements
 
@@ -328,7 +329,7 @@ submitAppSearchRequest : AppSearchRequest -> Cmd Msg
 submitAppSearchRequest req =
     let
         encReq =
-            encodeAppSearchRequest req
+            encodedAppSearchRequest req
 
         url =
             host ++ appSearchEndpoint
@@ -347,153 +348,354 @@ submitAppSearchRequest req =
         }
 
 
-type alias SearchResponse =
-    { someField : String
+
+-- Encoder / Decoder gen'ed by: https://korban.net/elm/json2elm/
+
+
+type alias Root =
+    { meta : RootMeta
+    , results : List AppSearchResponse
     }
 
 
-searchResponseDecoder : JD.Decoder SearchResponse
-searchResponseDecoder =
-    JD.map SearchResponse
-        (JD.at [ "someField" ] JD.string)
+type alias RootMeta =
+    { alerts : List ()
+    , engine : RootMetaEngine
+    , page : RootMetaPage
+    , precision : Int
+    , requestId : String
+    , warnings : List ()
+    }
+
+
+type alias RootMetaEngine =
+    { name : String
+    , type_ : String
+    }
+
+
+type alias RootMetaPage =
+    { current : Int
+    , size : Int
+    , totalPages : Int
+    , totalResults : Int
+    }
+
+
+
+-- NB: I have doubts json2elm will be my long-term solution, so granting myself some laziness here, only renaming the object that will be "actually used", for the rest
+--     I'm sticking to the output of the tool
+
+
+mapResponse : AppSearchResponse -> Data (List PresidentialApprovalDatum)
+mapResponse res =
+    let
+        res_ : List PresidentialApprovalDatum
+        res_ =
+            []
+    in
+    Success res_
+
+
+type alias AppSearchResponse =
+    { approving : RootResultsObjectApproving
+    , disapproving : RootResultsObjectDisapproving
+    , endDate : RootResultsObjectEndDate
+    , id : RootResultsObjectId
+    , meta : RootResultsObjectMeta
+    , presidentName : RootResultsObjectPresidentName
+    , startDate : RootResultsObjectStartDate
+    , unsureNoData : RootResultsObjectUnsureNoData
+    }
+
+
+type alias RootResultsObjectApproving =
+    { raw : Int
+    }
+
+
+type alias RootResultsObjectDisapproving =
+    { raw : Int
+    }
+
+
+type alias RootResultsObjectEndDate =
+    { raw : String
+    }
+
+
+type alias RootResultsObjectId =
+    { raw : String
+    }
+
+
+type alias RootResultsObjectMeta =
+    { engine : String
+    , id : String
+    , score : Int
+    }
+
+
+type alias RootResultsObjectPresidentName =
+    { raw : String
+    }
+
+
+type alias RootResultsObjectStartDate =
+    { raw : String
+    }
+
+
+type alias RootResultsObjectUnsureNoData =
+    { raw : Int
+    }
+
+
+rootDecoder : Json.Decode.Decoder Root
+rootDecoder =
+    Json.Decode.map2 Root
+        (Json.Decode.field "meta" rootMetaDecoder)
+        (Json.Decode.field "results" <| Json.Decode.list appSearchResponseDecoder)
+
+
+rootMetaDecoder : Json.Decode.Decoder RootMeta
+rootMetaDecoder =
+    Json.Decode.map6 RootMeta
+        (Json.Decode.field "alerts" <| Json.Decode.list <| Json.Decode.succeed ())
+        (Json.Decode.field "engine" rootMetaEngineDecoder)
+        (Json.Decode.field "page" rootMetaPageDecoder)
+        (Json.Decode.field "precision" Json.Decode.int)
+        (Json.Decode.field "request_id" Json.Decode.string)
+        (Json.Decode.field "warnings" <| Json.Decode.list <| Json.Decode.succeed ())
+
+
+rootMetaEngineDecoder : Json.Decode.Decoder RootMetaEngine
+rootMetaEngineDecoder =
+    Json.Decode.map2 RootMetaEngine
+        (Json.Decode.field "name" Json.Decode.string)
+        (Json.Decode.field "type" Json.Decode.string)
+
+
+rootMetaPageDecoder : Json.Decode.Decoder RootMetaPage
+rootMetaPageDecoder =
+    Json.Decode.map4 RootMetaPage
+        (Json.Decode.field "current" Json.Decode.int)
+        (Json.Decode.field "size" Json.Decode.int)
+        (Json.Decode.field "total_pages" Json.Decode.int)
+        (Json.Decode.field "total_results" Json.Decode.int)
+
+
+appSearchResponseDecoder : Json.Decode.Decoder AppSearchResponse
+appSearchResponseDecoder =
+    Json.Decode.map8 AppSearchResponse
+        (Json.Decode.field "approving" rootResultsObjectApprovingDecoder)
+        (Json.Decode.field "disapproving" rootResultsObjectDisapprovingDecoder)
+        (Json.Decode.field "end_date" rootResultsObjectEndDateDecoder)
+        (Json.Decode.field "id" rootResultsObjectIdDecoder)
+        (Json.Decode.field "_meta" rootResultsObjectMetaDecoder)
+        (Json.Decode.field "president_name" rootResultsObjectPresidentNameDecoder)
+        (Json.Decode.field "start_date" rootResultsObjectStartDateDecoder)
+        (Json.Decode.field "unsure_no_data" rootResultsObjectUnsureNoDataDecoder)
+
+
+rootResultsObjectApprovingDecoder : Json.Decode.Decoder RootResultsObjectApproving
+rootResultsObjectApprovingDecoder =
+    Json.Decode.map RootResultsObjectApproving
+        (Json.Decode.field "raw" Json.Decode.int)
+
+
+rootResultsObjectDisapprovingDecoder : Json.Decode.Decoder RootResultsObjectDisapproving
+rootResultsObjectDisapprovingDecoder =
+    Json.Decode.map RootResultsObjectDisapproving
+        (Json.Decode.field "raw" Json.Decode.int)
+
+
+rootResultsObjectEndDateDecoder : Json.Decode.Decoder RootResultsObjectEndDate
+rootResultsObjectEndDateDecoder =
+    Json.Decode.map RootResultsObjectEndDate
+        (Json.Decode.field "raw" Json.Decode.string)
+
+
+rootResultsObjectIdDecoder : Json.Decode.Decoder RootResultsObjectId
+rootResultsObjectIdDecoder =
+    Json.Decode.map RootResultsObjectId
+        (Json.Decode.field "raw" Json.Decode.string)
+
+
+rootResultsObjectMetaDecoder : Json.Decode.Decoder RootResultsObjectMeta
+rootResultsObjectMetaDecoder =
+    Json.Decode.map3 RootResultsObjectMeta
+        (Json.Decode.field "engine" Json.Decode.string)
+        (Json.Decode.field "id" Json.Decode.string)
+        (Json.Decode.field "score" Json.Decode.int)
+
+
+rootResultsObjectPresidentNameDecoder : Json.Decode.Decoder RootResultsObjectPresidentName
+rootResultsObjectPresidentNameDecoder =
+    Json.Decode.map RootResultsObjectPresidentName
+        (Json.Decode.field "raw" Json.Decode.string)
+
+
+rootResultsObjectStartDateDecoder : Json.Decode.Decoder RootResultsObjectStartDate
+rootResultsObjectStartDateDecoder =
+    Json.Decode.map RootResultsObjectStartDate
+        (Json.Decode.field "raw" Json.Decode.string)
+
+
+rootResultsObjectUnsureNoDataDecoder : Json.Decode.Decoder RootResultsObjectUnsureNoData
+rootResultsObjectUnsureNoDataDecoder =
+    Json.Decode.map RootResultsObjectUnsureNoData
+        (Json.Decode.field "raw" Json.Decode.int)
+
+
+encodedRoot : Root -> Json.Encode.Value
+encodedRoot root =
+    Json.Encode.object
+        [ ( "meta", encodedRootMeta root.meta )
+        , ( "results", Json.Encode.list encodedRootResultsObject root.results )
+        ]
+
+
+encodedRootMeta : RootMeta -> Json.Encode.Value
+encodedRootMeta rootMeta =
+    Json.Encode.object
+        [ ( "alerts", Json.Encode.list (\_ -> Json.Encode.null) rootMeta.alerts )
+        , ( "engine", encodedRootMetaEngine rootMeta.engine )
+        , ( "page", encodedRootMetaPage rootMeta.page )
+        , ( "precision", Json.Encode.int rootMeta.precision )
+        , ( "request_id", Json.Encode.string rootMeta.requestId )
+        , ( "warnings", Json.Encode.list (\_ -> Json.Encode.null) rootMeta.warnings )
+        ]
+
+
+encodedRootMetaEngine : RootMetaEngine -> Json.Encode.Value
+encodedRootMetaEngine rootMetaEngine =
+    Json.Encode.object
+        [ ( "name", Json.Encode.string rootMetaEngine.name )
+        , ( "type", Json.Encode.string rootMetaEngine.type_ )
+        ]
+
+
+encodedRootMetaPage : RootMetaPage -> Json.Encode.Value
+encodedRootMetaPage rootMetaPage =
+    Json.Encode.object
+        [ ( "current", Json.Encode.int rootMetaPage.current )
+        , ( "size", Json.Encode.int rootMetaPage.size )
+        , ( "total_pages", Json.Encode.int rootMetaPage.totalPages )
+        , ( "total_results", Json.Encode.int rootMetaPage.totalResults )
+        ]
+
+
+encodedRootResultsObject : AppSearchResponse -> Json.Encode.Value
+encodedRootResultsObject rootResultsObject =
+    Json.Encode.object
+        [ ( "approving", encodedRootResultsObjectApproving rootResultsObject.approving )
+        , ( "disapproving", encodedRootResultsObjectDisapproving rootResultsObject.disapproving )
+        , ( "end_date", encodedRootResultsObjectEndDate rootResultsObject.endDate )
+        , ( "id", encodedRootResultsObjectId rootResultsObject.id )
+        , ( "_meta", encodedRootResultsObjectMeta rootResultsObject.meta )
+        , ( "president_name", encodedRootResultsObjectPresidentName rootResultsObject.presidentName )
+        , ( "start_date", encodedRootResultsObjectStartDate rootResultsObject.startDate )
+        , ( "unsure_no_data", encodedRootResultsObjectUnsureNoData rootResultsObject.unsureNoData )
+        ]
+
+
+encodedRootResultsObjectApproving : RootResultsObjectApproving -> Json.Encode.Value
+encodedRootResultsObjectApproving rootResultsObjectApproving =
+    Json.Encode.object
+        [ ( "raw", Json.Encode.int rootResultsObjectApproving.raw )
+        ]
+
+
+encodedRootResultsObjectDisapproving : RootResultsObjectDisapproving -> Json.Encode.Value
+encodedRootResultsObjectDisapproving rootResultsObjectDisapproving =
+    Json.Encode.object
+        [ ( "raw", Json.Encode.int rootResultsObjectDisapproving.raw )
+        ]
+
+
+encodedRootResultsObjectEndDate : RootResultsObjectEndDate -> Json.Encode.Value
+encodedRootResultsObjectEndDate rootResultsObjectEndDate =
+    Json.Encode.object
+        [ ( "raw", Json.Encode.string rootResultsObjectEndDate.raw )
+        ]
+
+
+encodedRootResultsObjectId : RootResultsObjectId -> Json.Encode.Value
+encodedRootResultsObjectId rootResultsObjectId =
+    Json.Encode.object
+        [ ( "raw", Json.Encode.string rootResultsObjectId.raw )
+        ]
+
+
+encodedRootResultsObjectMeta : RootResultsObjectMeta -> Json.Encode.Value
+encodedRootResultsObjectMeta rootResultsObjectMeta =
+    Json.Encode.object
+        [ ( "engine", Json.Encode.string rootResultsObjectMeta.engine )
+        , ( "id", Json.Encode.string rootResultsObjectMeta.id )
+        , ( "score", Json.Encode.int rootResultsObjectMeta.score )
+        ]
+
+
+encodedRootResultsObjectPresidentName : RootResultsObjectPresidentName -> Json.Encode.Value
+encodedRootResultsObjectPresidentName rootResultsObjectPresidentName =
+    Json.Encode.object
+        [ ( "raw", Json.Encode.string rootResultsObjectPresidentName.raw )
+        ]
+
+
+encodedRootResultsObjectStartDate : RootResultsObjectStartDate -> Json.Encode.Value
+encodedRootResultsObjectStartDate rootResultsObjectStartDate =
+    Json.Encode.object
+        [ ( "raw", Json.Encode.string rootResultsObjectStartDate.raw )
+        ]
+
+
+encodedRootResultsObjectUnsureNoData : RootResultsObjectUnsureNoData -> Json.Encode.Value
+encodedRootResultsObjectUnsureNoData rootResultsObjectUnsureNoData =
+    Json.Encode.object
+        [ ( "raw", Json.Encode.int rootResultsObjectUnsureNoData.raw )
+        ]
+
+
+
+-- Encoding / Decoding for AppSearchRequest:
 
 
 type alias AppSearchRequest =
-    { query : String
-    , filters : List String
+    { filters : AppSearchRequestFilters
+    , query : String
     }
 
 
-defaultAppSearchRequest =
-    { query = ""
-    , filters = [ "Barrack Obama", "George W. Bush" ] -- TODO: I want this formatting eventually: Dict[Dim, EnumeratedValues]
+type alias AppSearchRequestFilters =
+    { presidentName : List String
     }
 
 
-encodeAppSearchRequest : AppSearchRequest -> JE.Value
-encodeAppSearchRequest req =
-    -- let
-    --     encodeFilters : D.Dict String (List String)
-    --     encodeFilters d =
-    -- in
-    JE.object <|
-        [ ( "query", JE.string req.query )
-        , ( "filters"
-          , JE.object <|
-                [ ( "president_name", JE.list JE.string req.filters ) ]
-          )
-        ]
+appSearchRequestDecoder : Json.Decode.Decoder AppSearchRequest
+appSearchRequestDecoder =
+    Json.Decode.map2 AppSearchRequest
+        (Json.Decode.field "filters" rootFiltersDecoder)
+        (Json.Decode.field "query" Json.Decode.string)
 
 
-appSearchResponseDecoder : JD.Decoder (Data (List PresidentialApproval))
-appSearchResponseDecoder =
-    Debug.todo "This!"
+rootFiltersDecoder : Json.Decode.Decoder AppSearchRequestFilters
+rootFiltersDecoder =
+    Json.Decode.map AppSearchRequestFilters
+        (Json.Decode.field "president_name" <| Json.Decode.list Json.Decode.string)
 
 
-rowDecoder : JD.Decoder PresidentialApproval
-rowDecoder =
-    JD.map5 PresidentialApproval
-        (JD.field "president_name")
-
-
-
-type alias ComplexType =
-    {
-
-    }
-
-
-
-type alias FetchResponse = { 
-    meta : Meta
-    , results : List ComplexType
-    }
-
-type alias MetaPage =
-    { current : Int
-    , total_pages : Int
-    , total_results : Int
-    , size : Int
-    }
-
-type alias MetaEngine =
-    { name : String
-    , type : String
-    }
-
-type alias Meta =
-    { alerts : List ComplexType
-    , warnings : List ComplexType
-    , precision : Int
-    , page : MetaPage
-    , engine : MetaEngine
-    , request_id : String
-    }
-
-decode : Json.Decode.Decoder 
-decode =
-    Json.Decode.succeed 
-        |: ("" := decode)
-        |: ("meta" := decodeMeta)
-        |: ("results" := Json.Decode.list decodeComplexType)
-
-decodeMetaPage : Json.Decode.Decoder MetaPage
-decodeMetaPage =
-    Json.Decode.succeed MetaPage
-        |: ("current" := Json.Decode.int)
-        |: ("total_pages" := Json.Decode.int)
-        |: ("total_results" := Json.Decode.int)
-        |: ("size" := Json.Decode.int)
-
-decodeMetaEngine : Json.Decode.Decoder MetaEngine
-decodeMetaEngine =
-    Json.Decode.succeed MetaEngine
-        |: ("name" := Json.Decode.string)
-        |: ("type" := Json.Decode.string)
-
-decodeMeta : Json.Decode.Decoder Meta
-decodeMeta =
-    Json.Decode.succeed Meta
-        |: ("alerts" := Json.Decode.list decodeComplexType)
-        |: ("warnings" := Json.Decode.list decodeComplexType)
-        |: ("precision" := Json.Decode.int)
-        |: ("page" := decodeMetaPage)
-        |: ("engine" := decodeMetaEngine)
-        |: ("request_id" := Json.Decode.string)
-
-encode :  -> Json.Encode.Value
-encode record =
+encodedAppSearchRequest : AppSearchRequest -> Json.Encode.Value
+encodedAppSearchRequest root =
     Json.Encode.object
-        [ ("",  encode <| record.)
-        , ("meta",  encodeMeta <| record.meta)
-        , ("results",  Json.Encode.list <| List.map encodeComplexType <| record.results)
+        [ ( "filters", encodedRootFilters root.filters )
+        , ( "query", Json.Encode.string root.query )
         ]
 
-encodeMetaPage : MetaPage -> Json.Encode.Value
-encodeMetaPage record =
+
+encodedRootFilters : AppSearchRequestFilters -> Json.Encode.Value
+encodedRootFilters rootFilters =
     Json.Encode.object
-        [ ("current",  Json.Encode.int <| record.current)
-        , ("total_pages",  Json.Encode.int <| record.total_pages)
-        , ("total_results",  Json.Encode.int <| record.total_results)
-        , ("size",  Json.Encode.int <| record.size)
+        [ ( "president_name", Json.Encode.list Json.Encode.string rootFilters.presidentName )
         ]
-
-encodeMetaEngine : MetaEngine -> Json.Encode.Value
-encodeMetaEngine record =
-    Json.Encode.object
-        [ ("name",  Json.Encode.string <| record.name)
-        , ("type",  Json.Encode.string <| record.type)
-        ]
-
-encodeMeta : Meta -> Json.Encode.Value
-encodeMeta record =
-    Json.Encode.object
-        [ ("alerts",  Json.Encode.list <| List.map encodeComplexType <| record.alerts)
-        , ("warnings",  Json.Encode.list <| List.map encodeComplexType <| record.warnings)
-        , ("precision",  Json.Encode.int <| record.precision)
-        , ("page",  encodeMetaPage <| record.page)
-        , ("engine",  encodeMetaEngine <| record.engine)
-        , ("request_id",  Json.Encode.string <| record.request_id)
-        ]
-
-
