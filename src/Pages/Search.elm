@@ -350,11 +350,28 @@ submitAppSearchRequest req =
 
 
 -- Encoder / Decoder gen'ed by: https://korban.net/elm/json2elm/
+-- NB: I have doubts json2elm will be my long-term solution, so granting myself some laziness here, only renaming the object that will be "actually used", for the rest
+--     I'm sticking to the output of the tool
 
 
-type alias Root =
+mapResponse : AppSearchResponse -> Data (List PresidentialApprovalDatum)
+mapResponse res =
+    let
+        res_ : List PresidentialApprovalDatum
+        res_ =
+            []
+    in
+    Success res_
+
+
+
+-- Required packages:
+-- * elm/json
+
+
+type alias AppSearchResponse =
     { meta : RootMeta
-    , results : List AppSearchResponse
+    , results : List RootResultsObject
     }
 
 
@@ -382,22 +399,7 @@ type alias RootMetaPage =
     }
 
 
-
--- NB: I have doubts json2elm will be my long-term solution, so granting myself some laziness here, only renaming the object that will be "actually used", for the rest
---     I'm sticking to the output of the tool
-
-
-mapResponse : AppSearchResponse -> Data (List PresidentialApprovalDatum)
-mapResponse res =
-    let
-        res_ : List PresidentialApprovalDatum
-        res_ =
-            []
-    in
-    Success res_
-
-
-type alias AppSearchResponse =
+type alias RootResultsObject =
     { approving : RootResultsObjectApproving
     , disapproving : RootResultsObjectDisapproving
     , endDate : RootResultsObjectEndDate
@@ -451,11 +453,11 @@ type alias RootResultsObjectUnsureNoData =
     }
 
 
-rootDecoder : Json.Decode.Decoder Root
-rootDecoder =
-    Json.Decode.map2 Root
+appSearchResponseDecoder : Json.Decode.Decoder AppSearchResponse
+appSearchResponseDecoder =
+    Json.Decode.map2 AppSearchResponse
         (Json.Decode.field "meta" rootMetaDecoder)
-        (Json.Decode.field "results" <| Json.Decode.list appSearchResponseDecoder)
+        (Json.Decode.field "results" <| Json.Decode.list rootResultsObjectDecoder)
 
 
 rootMetaDecoder : Json.Decode.Decoder RootMeta
@@ -485,9 +487,9 @@ rootMetaPageDecoder =
         (Json.Decode.field "total_results" Json.Decode.int)
 
 
-appSearchResponseDecoder : Json.Decode.Decoder AppSearchResponse
-appSearchResponseDecoder =
-    Json.Decode.map8 AppSearchResponse
+rootResultsObjectDecoder : Json.Decode.Decoder RootResultsObject
+rootResultsObjectDecoder =
+    Json.Decode.map8 RootResultsObject
         (Json.Decode.field "approving" rootResultsObjectApprovingDecoder)
         (Json.Decode.field "disapproving" rootResultsObjectDisapprovingDecoder)
         (Json.Decode.field "end_date" rootResultsObjectEndDateDecoder)
@@ -546,116 +548,6 @@ rootResultsObjectUnsureNoDataDecoder : Json.Decode.Decoder RootResultsObjectUnsu
 rootResultsObjectUnsureNoDataDecoder =
     Json.Decode.map RootResultsObjectUnsureNoData
         (Json.Decode.field "raw" Json.Decode.int)
-
-
-encodedRoot : Root -> Json.Encode.Value
-encodedRoot root =
-    Json.Encode.object
-        [ ( "meta", encodedRootMeta root.meta )
-        , ( "results", Json.Encode.list encodedRootResultsObject root.results )
-        ]
-
-
-encodedRootMeta : RootMeta -> Json.Encode.Value
-encodedRootMeta rootMeta =
-    Json.Encode.object
-        [ ( "alerts", Json.Encode.list (\_ -> Json.Encode.null) rootMeta.alerts )
-        , ( "engine", encodedRootMetaEngine rootMeta.engine )
-        , ( "page", encodedRootMetaPage rootMeta.page )
-        , ( "precision", Json.Encode.int rootMeta.precision )
-        , ( "request_id", Json.Encode.string rootMeta.requestId )
-        , ( "warnings", Json.Encode.list (\_ -> Json.Encode.null) rootMeta.warnings )
-        ]
-
-
-encodedRootMetaEngine : RootMetaEngine -> Json.Encode.Value
-encodedRootMetaEngine rootMetaEngine =
-    Json.Encode.object
-        [ ( "name", Json.Encode.string rootMetaEngine.name )
-        , ( "type", Json.Encode.string rootMetaEngine.type_ )
-        ]
-
-
-encodedRootMetaPage : RootMetaPage -> Json.Encode.Value
-encodedRootMetaPage rootMetaPage =
-    Json.Encode.object
-        [ ( "current", Json.Encode.int rootMetaPage.current )
-        , ( "size", Json.Encode.int rootMetaPage.size )
-        , ( "total_pages", Json.Encode.int rootMetaPage.totalPages )
-        , ( "total_results", Json.Encode.int rootMetaPage.totalResults )
-        ]
-
-
-encodedRootResultsObject : AppSearchResponse -> Json.Encode.Value
-encodedRootResultsObject rootResultsObject =
-    Json.Encode.object
-        [ ( "approving", encodedRootResultsObjectApproving rootResultsObject.approving )
-        , ( "disapproving", encodedRootResultsObjectDisapproving rootResultsObject.disapproving )
-        , ( "end_date", encodedRootResultsObjectEndDate rootResultsObject.endDate )
-        , ( "id", encodedRootResultsObjectId rootResultsObject.id )
-        , ( "_meta", encodedRootResultsObjectMeta rootResultsObject.meta )
-        , ( "president_name", encodedRootResultsObjectPresidentName rootResultsObject.presidentName )
-        , ( "start_date", encodedRootResultsObjectStartDate rootResultsObject.startDate )
-        , ( "unsure_no_data", encodedRootResultsObjectUnsureNoData rootResultsObject.unsureNoData )
-        ]
-
-
-encodedRootResultsObjectApproving : RootResultsObjectApproving -> Json.Encode.Value
-encodedRootResultsObjectApproving rootResultsObjectApproving =
-    Json.Encode.object
-        [ ( "raw", Json.Encode.int rootResultsObjectApproving.raw )
-        ]
-
-
-encodedRootResultsObjectDisapproving : RootResultsObjectDisapproving -> Json.Encode.Value
-encodedRootResultsObjectDisapproving rootResultsObjectDisapproving =
-    Json.Encode.object
-        [ ( "raw", Json.Encode.int rootResultsObjectDisapproving.raw )
-        ]
-
-
-encodedRootResultsObjectEndDate : RootResultsObjectEndDate -> Json.Encode.Value
-encodedRootResultsObjectEndDate rootResultsObjectEndDate =
-    Json.Encode.object
-        [ ( "raw", Json.Encode.string rootResultsObjectEndDate.raw )
-        ]
-
-
-encodedRootResultsObjectId : RootResultsObjectId -> Json.Encode.Value
-encodedRootResultsObjectId rootResultsObjectId =
-    Json.Encode.object
-        [ ( "raw", Json.Encode.string rootResultsObjectId.raw )
-        ]
-
-
-encodedRootResultsObjectMeta : RootResultsObjectMeta -> Json.Encode.Value
-encodedRootResultsObjectMeta rootResultsObjectMeta =
-    Json.Encode.object
-        [ ( "engine", Json.Encode.string rootResultsObjectMeta.engine )
-        , ( "id", Json.Encode.string rootResultsObjectMeta.id )
-        , ( "score", Json.Encode.int rootResultsObjectMeta.score )
-        ]
-
-
-encodedRootResultsObjectPresidentName : RootResultsObjectPresidentName -> Json.Encode.Value
-encodedRootResultsObjectPresidentName rootResultsObjectPresidentName =
-    Json.Encode.object
-        [ ( "raw", Json.Encode.string rootResultsObjectPresidentName.raw )
-        ]
-
-
-encodedRootResultsObjectStartDate : RootResultsObjectStartDate -> Json.Encode.Value
-encodedRootResultsObjectStartDate rootResultsObjectStartDate =
-    Json.Encode.object
-        [ ( "raw", Json.Encode.string rootResultsObjectStartDate.raw )
-        ]
-
-
-encodedRootResultsObjectUnsureNoData : RootResultsObjectUnsureNoData -> Json.Encode.Value
-encodedRootResultsObjectUnsureNoData rootResultsObjectUnsureNoData =
-    Json.Encode.object
-        [ ( "raw", Json.Encode.int rootResultsObjectUnsureNoData.raw )
-        ]
 
 
 
