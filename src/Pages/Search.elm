@@ -102,14 +102,16 @@ update msg model =
             )
 
         UserInitiatedBatchedFetch dataSofar ->
-            case dataSofar of ->
+            case dataSofar of
                 Nothing ->
-
                     ( { model
                         | chartData = BatchedLoading 1 100 Nothing []
-                    }
+                      }
                     , Effect.fromCmd <| submitAppSearchRequest defaultAppSearchRequest
                     )
+
+                Just data ->
+                    ( model, Effect.none )
 
         FetchResponded result ->
             let
@@ -132,9 +134,8 @@ update msg model =
                                                         _ ->
                                                             -- TODO: smell?
                                                             mapResponse response
-                                                
                                             in
-                                            ( {model,  )
+                                            ( model, Effect.none )
 
                                         False ->
                                             ( model, Effect.none )
@@ -207,7 +208,7 @@ viewElements model =
             -- , Element.height fill
             , centerX
             ]
-            { onPress = Just UserInitiatedBatchedFetch
+            { onPress = Just <| UserInitiatedBatchedFetch Nothing
             , label = el [ centerX ] <| Element.text "Fetch:"
             }
         ]
@@ -262,10 +263,10 @@ viewChartElement model data attrs ( wpx, hpx ) =
                         copy =
                             case pc of
                                 Nothing ->
-                                    "Batch loding page " ++ String.fromInt pg ++ " of unknown total page count"
+                                    "Batch loading page " ++ String.fromInt pg ++ " of unknown total page count"
 
                                 Just v ->
-                                    "Batch loding page " ++ String.fromInt pg ++ " of " ++ String.fromInt v
+                                    "Batch loading page " ++ String.fromInt pg ++ " of " ++ String.fromInt v
                     in
                     Element.text copy
 

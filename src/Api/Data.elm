@@ -12,7 +12,7 @@ type alias BatchSize =
 type Data value
     = NotAsked
     | Loading
-    | BatchedLoading CurrentPage BatchSize (Maybe Int) value
+    | BatchedLoading CurrentPage BatchSize (Maybe Int) value -- (Maybe Int) is the total page count, which we only know after the first response
     | Failure (List String)
     | Success value
 
