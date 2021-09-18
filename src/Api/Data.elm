@@ -1,9 +1,18 @@
 module Api.Data exposing (Data(..), map, toMaybe)
 
 
+type alias CurrentPage =
+    Int
+
+
+type alias BatchSize =
+    Int
+
+
 type Data value
     = NotAsked
     | Loading
+    | BatchedLoading CurrentPage BatchSize (Maybe Int) value -- (Maybe Int) is the total page count, which we only know after the first response
     | Failure (List String)
     | Success value
 
@@ -16,6 +25,9 @@ map fn data =
 
         Loading ->
             Loading
+
+        BatchedLoading cp bs pc v ->
+            BatchedLoading cp bs pc (fn v)
 
         Failure reason ->
             Failure reason

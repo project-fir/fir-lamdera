@@ -117,6 +117,9 @@ viewElements model =
                 Loading ->
                     Element.text "Catalog is laoding"
 
+                BatchedLoading _ _ _ _ ->
+                    Element.text "Catalog is not intended for BatchLoad!"
+
                 Success catalog ->
                     Element.text "Catalog is loaded"
 
