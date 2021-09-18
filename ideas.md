@@ -45,3 +45,16 @@ Here's a diagram of the architecture I'm pursuing first.
 #### Another idea:
 An example of the post-schema change notification panel. When adding new types of data to an index, elastic cloud notifies you to confirm the types (it presents it's best guess). This is pretty cool, I like this approach better than [Great Expectations](https://greatexpectations.io/). Is there a possible UI that can give us an "evergreen-ed" version of this?
 ![schema fields](./assets/fig1.png)
+
+
+
+
+##### fir01 provisioning
+
+Goal is to get a fresh VM up and running with just elastic search, scrappy.
+
+```bash
+sudo apt-get update
+sudo apt-get install docker.io
+sudo apt-get install docker-compose
+```
