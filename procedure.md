@@ -106,11 +106,16 @@ Using this awesome tool: https://korban.net/elm/json2elm/
 seeds:
 ```json
 {
-    "query": "",
+    "query": "this is a query",
     "filters" : {
-         "president_name": [ "Barack Obama", "George W. Bush"]
-  }
+         "president_name": [ "Barack Obama"]
+    },
+    "page": {
+        "current": 4,
+        "size": 100
+    }
 }
+
 ```
 
 And it's response:
@@ -419,3 +424,26 @@ And it's response:
 
 
 
+
+
+##### fir02 provisioning
+
+`fir01` was an Ubuntu VM I abandonded since the default repos were really stale. Honestly this is 
+
+Goal is to get a fresh VM up and running with just elastic search, scrappy.
+
+In GCP Compute engine `fir02` is set up on Container Optimized OS, the newest long-support version.
+
+
+`ssh` into the VM
+```bash
+mkdir deploy
+cd deploy
+git clone https://github.com/rob-sokolowski-git-org/fir-sandbox.git
+cd fir-sandbox/elastic-search
+
+sudo apt-get update
+sudo apt-get install docker.io
+sudo apt-get install docker-compose
+sudo apt-get install docker-compose
+```

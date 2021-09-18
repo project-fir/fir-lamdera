@@ -48,13 +48,3 @@ An example of the post-schema change notification panel. When adding new types o
 
 
 
-
-##### fir01 provisioning
-
-Goal is to get a fresh VM up and running with just elastic search, scrappy.
-
-```bash
-sudo apt-get update
-sudo apt-get install docker.io
-sudo apt-get install docker-compose
-```
