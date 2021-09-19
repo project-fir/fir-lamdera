@@ -117,7 +117,7 @@ def publish_to_es(validated_data: t.List[ApprovalRatingDoc], config: _Config):
 if __name__ == "__main__":
     config = _Config(
         es_host="http://34.121.52.200:9200/",
-        destination_index="presidential-approval-ratings-dev",
+        destination_index="presidential-approval-ratings",
         # destination_index="presidential-approval-ratings",
         source_dir=Path(Path.home(), "data/presidential_approval"),
         dry_run=False,
