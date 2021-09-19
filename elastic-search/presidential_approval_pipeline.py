@@ -3,15 +3,16 @@ import requests
 
 import json
 import typing as t
+
 from pathlib import Path
 from pydantic import BaseModel
 from urllib.parse import urljoin
 
 
 class _Config(BaseModel):
-    es_cloud_hostname: str
-    api_key: str
-    destination_engine: str
+    es_host: str
+    # api_key: str
+    destination_index: str
     source_dir: Path
     # default to side-effect free, opt-out by setting value to False
     dry_run: bool = True
@@ -84,53 +85,42 @@ def validate_file(path: str) -> t.Tuple[bool, t.Optional[t.List[ApprovalRatingDo
 
 def publish_to_es(validated_data: t.List[ApprovalRatingDoc], config: _Config):
     """
-    Given validated data, publish document (in chunks) to the already created engine
 
-    Note: For the time being, I'm doing schema checking with the ES-Cloud UI. I think that's a bit
-    more practical while I develop the Elm UI for the same thing.
-
-    Important limitations:
-      Documents are sent via an array and are independently accepted and indexed, or rejected.
-      A 200 response and an empty errors array denotes a successful index.
-      If no id is provided, a unique id will be generated.
-      A document is created each time content is received without an id - beware duplicates!
-      A document will be updated - not created - if its id already exists within a document.
-      If the Engine has not seen the field before, then it will create a new field of type text.
-      Fields cannot be named: external_id, engine_id, highlight, or, and, not, any, all, none.
-      There is a 100 document per request limit; each document must be less than 100kb.
-      An indexing request may not exceed 10mb.
-
-    Source: https://www.elastic.co/guide/en/app-search/7.14/documents.html
     """
-    endpoint = f"/api/as/v1/engines/{config.destination_engine}/documents"
-    url = urljoin(config.es_cloud_hostname, endpoint)
+    endpoint = f"/{config.destination_index}"
+    url = urljoin(config.es_host, endpoint)
 
-    for i, chunk in enumerate(chunker(validated_data, config.chunk_size)):
+    # step 1: create index
+    r = requests.put(url)
+    if not r.ok:
+        raise Exception(f"error: {r.text}")
+
+    # step 2: iterate through 1-1
+    #         Eventually this will get slow, the _bulk API looks straight forward but will take some dev work to get going
+    #         A bigger problem here is we don't have id's for this sort of dataset. i think this will bite us in the form of accidental duplication, eventually.
+    for i, vd in enumerate(validated_data, config.chunk_size):
         print(
-            f"processing chunk {i} of {len(validated_data) / config.chunk_size}...")
-        payload = [c.dict() for c in chunk]
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {config.api_key}",
-        }
+            f"processing datum {i} of {len(validated_data)}")
+
+        endpoint = f"/{config.destination_index}/doc"
+        url = urljoin(config.es_host, endpoint)
 
         r = requests.post(
             url=url,
-            json=payload,
-            headers=headers,
+            json=vd.dict(),
         )
 
-    print("Response:")
-    print(r.text)
+        if not r.ok:
+            raise Exception(f"error: {r.text}")
 
 
 if __name__ == "__main__":
     config = _Config(
-        es_cloud_hostname="https://fir-sandbox.ent.eastus2.azure.elastic-cloud.com",
-        api_key=os.getenv("ELASTIC_CLOUD_API_KEY"),
-        destination_engine="presidential-approval-ratings",
+        es_host="http://34.121.52.200:9200/",
+        destination_index="presidential-approval-ratings-dev",
+        # destination_index="presidential-approval-ratings",
         source_dir=Path(Path.home(), "data/presidential_approval"),
-        dry_run=True,
+        dry_run=False,
     )
 
     print(f"""
@@ -144,7 +134,7 @@ if __name__ == "__main__":
         is_valid, validated_data = validate_file(path=path)
 
         if not config.dry_run:
-            print(F"publishing to: {config.destination_engine}")
+            print(F"publishing to: {config.destination_index}")
             publish_to_es(validated_data=validated_data, config=config)
         else:
             print(
