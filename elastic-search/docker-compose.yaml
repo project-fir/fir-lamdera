@@ -21,13 +21,13 @@ services:
   #    - fir-sandbox-network
   #   command: python ./shell-scripts/twitch_vod_pipeline.py
 
-  # dev_kit:
-  #   image: dev-kit:latest
-  #   volumes:
-  #     - .:/home/appuser/workspace
-  #     - ~/data:/home/appuser/data
-  #   networks:
-  #    - fir-sandbox-network
+  dev_kit:
+    image: dev-kit:latest
+    volumes:
+      - .:/home/appuser/workspace
+      - ~/data:/home/appuser/data
+    networks:
+     - fir-sandbox-network
 
 networks:
   fir-sandbox-network:
