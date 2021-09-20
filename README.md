@@ -2,8 +2,6 @@
 
 Check out the [demo](https://fir-lamdera.lamdera.app/)
 
-Ideas:
- * During development of the twitch_vod pipeline, I stumbled upon this. I'm starting to see an idea emerge where Lamdera can be used to manage metadata https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
 
 References:
 
@@ -19,8 +17,11 @@ The Python scripts in this repo assume the environment variable `ELASTIC_CLOUD_A
 
 Radar:
  * Entity relation diagram in Elm: https://github.com/azimuttapp/azimutt
+ * I think elm-animator has more features but this seems a little more ready to go. Worth experimenting with both https://github.com/andrewMacmurray/elm-simple-animation/tree/2.1.0
 
 
-Features on the docket:
+Ideas / features on the docket:
  * regex pre-validation of input data, UI based - ran into issues with ES cloud validator
  * simple nesting / un-nesting, UI based - ran into issues with Slides exporter not supporting row-indices, which would've solved this problem, see `presidential_approval_pipeline.py` for an example (the nested `for` loop)
+ * Lamdera-cron + roll-up jobs, https://www.elastic.co/guide/en/elasticsearch/reference/current/rollup-get-rollup-caps.html
+ * During development of the twitch_vod pipeline, I stumbled upon this. I'm starting to see an idea emerge where Lamdera can be used to manage metadata https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html

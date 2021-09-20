@@ -17,27 +17,37 @@
    * Turns out drawing a random number has side effects, I was unaware of this so spent time reading about why. I think I get it now and have a branch with
      random number generation working. Now I need to figure out how to wire up a series of events to build a user + pass along to generator + return to frontend
    * Found some sources of inspiration re, text editors: https://dkodaj.github.io/rte/, https://package.elm-lang.org/packages/mweiss/elm-rte-toolkit/latest/
- * Sep 2021: Yes it's been awhile. I've built up some Elm / Lamdera chops, now starting to think about how to use Lamdera in the context of data-analysis. I have a week off,
+
+#### Sep 2021:
+Yes it's been awhile. I've built up some Elm / Lamdera chops, now starting to think about how to use Lamdera in the context of data-analysis. I have a week off,
    and want to start exploring what it'd be like to incorporate Lamdera into an existing ecosystem. My thoughts atm:
-    * While "pure lamdera" is my happy place, it's a bit far from most company's realities. Could a datastore + Lamdera hybrid approach help convince others this paradigm isn't crazy?
-        - Pros:
-            * might help keep Lamdera cost down as I approach "medium data", pro looks like it could get pricey for what I want to achieve. Also hobbyst tier stops at 5MB (tho I think that might be negotiable)
-            * provide type safety "wrapped around" the data store - need to jam on this one more.
-        - cons:
-            * We are intentionally crossing a `semantic boundary`. Reducing such boundaries is a large motivation for Lamdera in the first place. I'm setting myself up for some upstream-swimming.
-    * Options that come to mind:
-        - MongoDB
-            * Very fast, BSON basically is just JSON
-            * Quickly scouring the web, I see no MongoDB protocol implemented in Elm.
-        - ElasticSearch
-            * HTTP API out of the box
-            * API support ElasticQuery DSL, which has (limited) Elm support.
-            * In additional to being a quasi-datastore, ES also has search features. If the data-viz stuff doesn't work out, there still might be fun things to experiment with.
-        - FaunaDB also looks interesting, but it's too much of a leap relative to my current skillset. I want to stay focused on the Lamdera aspect, if I'm successful Fauna deserves a closer look for sure.
-        - DataWarehousing products like BigQuery and Snowflake have lots of setup, and are higher latency. Punting this, though needs more consideration.
-    * I'm going with Elastic Search for now, with the expectation of running into HTTP-related latency issues.
-    * starting to piece together a project plan, see `ideas.md` in this directory
-    * using the idea of fewest semantic boundaries. Example is pulling in predisential data. Exporting to JSON and using the Elastic Cloud UI is how I'm going to do it. Current idea is to maintain proper lineage that this data is from a non-reproducible source, and using evergreen migrations to keep old pipelines up to date.
-    * oy, json decoding/encoding.. But more importantly it seems that the Elastic Cloud API has differences from the one I'm used to. Need to spend time to double check I'm barking up the corret tree and this "engine" (we're choice of wording IMO) can do the BI functions, and not have to use a different Elastic product..
-    * .. and .. bummer, `aggs` is not supported on their cloud offering. 
-    * .. and .. another set-back, `elm-ui` and `elm-charts` don't seem to get along. At this point I can't tell if it's a large issue, but `viewport` seems to be the culprit (it's not inheriting the height, width dimensions of parent `row`s/`column`s)
+  * While "pure lamdera" is my happy place, it's a bit far from most company's realities. Could a datastore + Lamdera hybrid approach help convince others this paradigm isn't crazy?
+      - Pros:
+          * might help keep Lamdera cost down as I approach "medium data", pro looks like it could get pricey for what I want to achieve. Also hobbyst tier stops at 5MB (tho I think that might be negotiable)
+          * provide type safety "wrapped around" the data store - need to jam on this one more.
+      - cons:
+          * We are intentionally crossing a `semantic boundary`. Reducing such boundaries is a large motivation for Lamdera in the first place. I'm setting myself up for some upstream-swimming.
+  * Options that come to mind:
+      - MongoDB
+          * Very fast, BSON basically is just JSON
+          * Quickly scouring the web, I see no MongoDB protocol implemented in Elm.
+      - ElasticSearch
+          * HTTP API out of the box
+          * API support ElasticQuery DSL, which has (limited) Elm support.
+          * In additional to being a quasi-datastore, ES also has search features. If the data-viz stuff doesn't work out, there still might be fun things to experiment with.
+      - FaunaDB also looks interesting, but it's too much of a leap relative to my current skillset. I want to stay focused on the Lamdera aspect, if I'm successful Fauna deserves a closer look for sure.
+      - DataWarehousing products like BigQuery and Snowflake have lots of setup, and are higher latency. Punting this, though needs more consideration.
+  * I'm going with Elastic Search for now, with the expectation of running into HTTP-related latency issues.
+  * starting to piece together a project plan, see `ideas.md` in this directory
+  * using the idea of fewest semantic boundaries. Example is pulling in predisential data. Exporting to JSON and using the Elastic Cloud UI is how I'm going to do it. Current idea is to maintain proper lineage that this data is from a non-reproducible source, and using evergreen migrations to keep old pipelines up to date.
+  * oy, json decoding/encoding.. But more importantly it seems that the Elastic Cloud API has differences from the one I'm used to. Need to spend time to double check I'm barking up the corret tree and this "engine" (we're choice of wording IMO) can do the BI functions, and not have to use a different Elastic product..
+  * .. and .. bummer, `aggs` is not supported on their cloud offering. 
+  * .. and .. another set-back, `elm-ui` and `elm-charts` don't seem to get along. At this point I can't tell if it's a large issue, but `viewport` seems to be the culprit (it's not inheriting the height, width dimensions of parent `row`s/`column`s)
+ * Elastic Cloud doesn't support the aggregation stuff I need. I kinda felt this when I noticed the word `engine` being used where I felt `index` was more appropriate. My guess is their optimizing for the profitable case, dev-friendly product search. To this goal, I think it's pretty cool. Kibana seems to be a package deal, so, Plan B. VM on GCP: http://34.121.52.200:9200/
+ * I've again run into a problem I'm setting out to solve:
+    * used the Python pipeline to update elastic search on the new index, http://34.121.52.200:9200/presidential-approval-ratings/_search
+    * aggregations don't support `text` fields, which is the data type ES guessed `president_name` to be. Trying to change the mapping doesn't work for `text` -> `keyword` (requires too much memeory).
+      An interesting thing about Elastic Search is how configurable it is. The error message even says it can be overwritten at the cost of (much) high memory usage. I'm pretty impressed with the open
+      source version of Elastic Search so far, this sort of thing makes me trust it.
+      * Solution 1: update pipeline script - been there done that, no thanks
+      * Solution 2: evergreen!
