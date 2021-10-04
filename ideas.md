@@ -47,4 +47,5 @@ An example of the post-schema change notification panel. When adding new types o
 ![schema fields](./assets/fig1.png)
 
 
-
+* PostGres + GraphQL
+* DataCubes pipelined into Lamdera backend?? Integrated with Elm Charts?
